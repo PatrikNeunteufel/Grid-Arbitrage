@@ -1,5 +1,6 @@
 # Build
 ouput/
+.vs/
 
 # Temporäre Dateien
 *.tmp
