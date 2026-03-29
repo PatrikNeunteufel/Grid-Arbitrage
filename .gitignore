@@ -1,0 +1,7 @@
+# Build
+ouput/
+
+# Temporäre Dateien
+*.tmp
+*.log
+

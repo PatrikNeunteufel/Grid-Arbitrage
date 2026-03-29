@@ -1,0 +1,26 @@
+timestamp,filename,source_url,local_path,data_type,rows,size_kb,status,superseded_at,note
+2026-03-27T18:40:26Z,ch_spot_prices_raw.csv,ch_spot_prices_raw.csv,,raw,,,error,,Portal/API nicht erreichbar (503?)
+2026-03-27T18:43:32Z,ch_spot_prices_raw.csv,ch_spot_prices_raw.csv,,raw,,,error,,Portal/API nicht erreichbar (503?)
+2026-03-27T18:47:22Z,ch_spot_prices_raw.csv,ch_spot_prices_raw.csv,,raw,,,error,,Portal/API nicht erreichbar (503?)
+2026-03-27T18:47:50Z,ch_spot_prices_raw.csv,ch_spot_prices_raw.csv,,raw,,,error,,Portal/API nicht erreichbar (503?)
+2026-03-27T18:48:16Z,ch_spot_prices_raw.csv,ch_spot_prices_raw.csv,,raw,,,error,,Portal/API nicht erreichbar (503?)
+2026-03-27T18:55:41Z,ch_spot_prices_raw.csv,https://transparency.entsoe.eu,data\raw\ch_spot_prices_raw.csv,raw,28389.0,923.9,active,,"ENTSO-E API, entsoe-py, 2023-2026"
+2026-03-27T18:56:20Z,ch_netzlast_raw.csv,https://transparency.entsoe.eu (query_load CH),data\raw\ch_netzlast_raw.csv,raw,28348.0,938.0,active,,"ENTSO-E query_load, jahresweise, MW→GW, 2023–2026"
+2026-03-27T18:57:13Z,ch_spot_prices_clean.csv,NB2:bereinigung,data\processed\ch_spot_prices_clean.csv,processed,28392.0,1168.5,active,,MODE=data
+2026-03-27T18:57:46Z,wirtschaftlichkeit.csv,NB2:dispatch,data\intermediate\realistisch\wirtschaftlichkeit.csv,intermediate,4.0,0.5,superseded,2026-03-27T19:12:12Z,MODE=data
+2026-03-27T18:57:54Z,netzentlastung_szenarien.csv,NB02:szenario,data\intermediate\realistisch\netzentlastung_szenarien.csv,intermediate/realistisch,4.0,0.4,superseded,2026-03-27T19:12:14Z,"MODE=data, Gleichzeitigkeit=realistisch (40%)"
+2026-03-27T19:12:12Z,wirtschaftlichkeit.csv,NB2:dispatch,data\intermediate\realistisch\wirtschaftlichkeit.csv,intermediate,4.0,0.5,superseded,2026-03-28T14:25:52Z,MODE=data
+2026-03-27T19:12:14Z,netzentlastung_szenarien.csv,NB02:szenario,data\intermediate\realistisch\netzentlastung_szenarien.csv,intermediate/realistisch,4.0,0.4,superseded,2026-03-28T14:25:54Z,"MODE=data, Gleichzeitigkeit=realistisch (40%)"
+2026-03-27T19:12:16Z,spread_zeitreihe.csv,NB2:spread_analyse,data\intermediate\spread_zeitreihe.csv,intermediate,40.0,2.6,active,,"Monatlicher Intra-Tag-Spread, Volatilität, Negativpreise"
+2026-03-27T21:09:54Z,bfs_gemeinden.csv,https://www.pxweb.bfs.admin.ch/api/v1/de/px-x-0102010000_101/px-x-0102010000_101.px,data\intermediate\bfs_gemeinden.csv,intermediate,26.0,0.3,superseded,2026-03-28T14:29:19Z,"BFS STATPOP 2024, PXWeb API"
+2026-03-27T21:23:34Z,ch_import_export_analyse.csv,"NB07: join(crossborder_raw, spot_prices_clean)",data\intermediate\ch_import_export_analyse.csv,intermediate,28354.0,1441.3,active,,net_export_mw + price_eur_mwh + dispatch flag
+2026-03-28T14:25:52Z,wirtschaftlichkeit.csv,NB2:dispatch,data\intermediate\realistisch\wirtschaftlichkeit.csv,intermediate,4.0,0.5,superseded,2026-03-28T14:53:01Z,MODE=data
+2026-03-28T14:25:54Z,netzentlastung_szenarien.csv,NB02:szenario,data\intermediate\realistisch\netzentlastung_szenarien.csv,intermediate/realistisch,4.0,0.4,superseded,2026-03-28T14:53:01Z,"MODE=data, Gleichzeitigkeit=realistisch (40%)"
+2026-03-28T14:29:19Z,bfs_gemeinden.csv,https://www.pxweb.bfs.admin.ch/api/v1/de/px-x-0102010000_101/px-x-0102010000_101.px,data\intermediate\bfs_gemeinden.csv,intermediate,26.0,0.3,superseded,2026-03-28T14:54:50Z,"BFS STATPOP 2024, PXWeb API"
+2026-03-28T14:53:01Z,wirtschaftlichkeit.csv,NB2:dispatch,data\intermediate\realistisch\wirtschaftlichkeit.csv,intermediate,4.0,0.5,superseded,2026-03-28T16:33:49Z,MODE=data
+2026-03-28T14:53:01Z,netzentlastung_szenarien.csv,NB02:szenario,data\intermediate\realistisch\netzentlastung_szenarien.csv,intermediate/realistisch,4.0,0.4,superseded,2026-03-28T16:33:51Z,"MODE=data, Gleichzeitigkeit=realistisch (40%)"
+2026-03-28T14:54:50Z,bfs_gemeinden.csv,https://www.pxweb.bfs.admin.ch/api/v1/de/px-x-0102010000_101/px-x-0102010000_101.px,data\intermediate\bfs_gemeinden.csv,intermediate,26.0,0.3,superseded,2026-03-28T16:35:32Z,"BFS STATPOP 2024, PXWeb API"
+2026-03-28T16:33:49Z,wirtschaftlichkeit.csv,NB2:dispatch,data\intermediate\realistisch\wirtschaftlichkeit.csv,intermediate,4.0,0.5,active,,MODE=data
+2026-03-28T16:33:51Z,netzentlastung_szenarien.csv,NB02:szenario,data\intermediate\realistisch\netzentlastung_szenarien.csv,intermediate/realistisch,4.0,0.4,active,,"MODE=data, Gleichzeitigkeit=realistisch (40%)"
+2026-03-28T16:35:32Z,bfs_gemeinden.csv,https://www.pxweb.bfs.admin.ch/api/v1/de/px-x-0102010000_101/px-x-0102010000_101.px,data\intermediate\bfs_gemeinden.csv,intermediate,26.0,0.3,superseded,2026-03-28T17:23:39Z,"BFS STATPOP 2024, PXWeb API"
+2026-03-28T17:23:39Z,bfs_gemeinden.csv,https://www.pxweb.bfs.admin.ch/api/v1/de/px-x-0102010000_101/px-x-0102010000_101.px,data\intermediate\bfs_gemeinden.csv,intermediate,26.0,0.3,active,,"BFS STATPOP 2024, PXWeb API"
