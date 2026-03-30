@@ -1,0 +1,5 @@
+szenario,n_privat,n_gewerbe,n_industrie,entlastung_mw,neue_spitzenlast_gw,reduktion_pct
+Status Quo (2024),0,0,0,0.0,10.5,0.0
+Moderat (2027),50000,2000,200,245.0,10.247,2.33
+Ambitioniert (2030),200000,8000,800,980.0,9.517,9.33
+Transformativ (2035),800000,30000,2000,3920.0,6.577,37.33

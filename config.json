@@ -93,7 +93,8 @@
       },
       "opex_rate": 0.015,
       "lifetime_j": 12,
-      "ziel_roi_pct": 5.0
+      "_hint_lifetime": "Li-Ion Betriebsdauer bis ~80% Kapazitätserhalt (Literatur: 10–15J). 12J = konservativer Mittelwert für Heimspeicher in CH-Klimabedingungen. Ziel-ROI = 100/lifetime_j (%/J) — wird in jedem NB lokal berechnet, nicht hier gespeichert.",
+      "_hint_opex": "1.5% des CAPEX/Jahr = Wartung, Versicherung, Monitoring. Branchenübliche Schätzung für Li-Ion-Heimspeicher CH."
     },
     "langzeit": {
       "lifetime_long_j": 20
@@ -131,22 +132,7 @@
   },
   "visualisierung": {
     "symlog_linthresh": 10000,
-    "output_dpi": 150,
-    "farben": {
-      "_hint": "Projektfarben SSOT — alle Notebooks lesen via CFG['visualisierung']['farben']",
-      "bg_dark": "#0d1117",
-      "bg_panel": "#141414",
-      "c_price": "#FFA726",
-      "c_load": "#66BB6A",
-      "c_charge": "#1565C0",
-      "c_feed": "#B71C1C",
-      "seg_colors": [
-        "#42A5F5",
-        "#66BB6A",
-        "#FFA726",
-        "#EF5350"
-      ]
-    }
+    "output_dpi": 150
   },
   "api_keys": {
     "_hint": "API-Keys hier eintragen — nie im Notebook-Code hardcoden",
