@@ -131,10 +131,39 @@
   },
   "visualisierung": {
     "symlog_linthresh": 10000,
-    "output_dpi": 150
+    "output_dpi": 150,
+    "farben": {
+      "_hint": "Projektfarben SSOT — alle Notebooks lesen via CFG['visualisierung']['farben']",
+      "bg_dark": "#0d1117",
+      "bg_panel": "#141414",
+      "c_price": "#FFA726",
+      "c_load": "#66BB6A",
+      "c_charge": "#1565C0",
+      "c_feed": "#B71C1C",
+      "seg_colors": [
+        "#42A5F5",
+        "#66BB6A",
+        "#FFA726",
+        "#EF5350"
+      ]
+    }
   },
   "api_keys": {
     "_hint": "API-Keys hier eintragen — nie im Notebook-Code hardcoden",
     "entsoe": "ae4a8f81-a361-4201-a690-0804b51acae1"
+  },
+  "_section_kuer_aktiv": "Welche Kür-Notebooks werden eingereicht? true = aktiv. NB05 ist immer aktiv (Bericht).",
+  "kuer_aktiv": {
+    "NB06": true,
+    "NB07": true,
+    "NB08": true,
+    "NB08a": true,
+    "NB09": true,
+    "NB10": true,
+    "NB11": true,
+    "NB12": true,
+    "NB13": true,
+    "NB14": true,
+    "NB15": true
   }
 }
