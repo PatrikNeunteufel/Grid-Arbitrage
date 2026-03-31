@@ -1,5 +1,6 @@
 # Build
 .vs/
+.ipynb_checkpoints/
 data/
 # Temporäre Dateien
 *.tmp
