@@ -79,11 +79,11 @@
   "produkt": {
     "prod_name": "Heimspeicher (7 kW / 14 kWh)",
     "prod_eur": 2000.0,
-    "capex_per_kwh": 142.9,
-    "roi_arb_pct": -0.9,
-    "roi_ev_pct": 14.92,
-    "roi_kombi_pct": 10.17,
-    "payback_kombi_j": 9.8
+    "capex_per_kwh": 500.0,
+    "roi_arb_pct": -0.78,
+    "roi_ev_pct": 3.19,
+    "roi_kombi_pct": 2.0,
+    "payback_kombi_j": 50.0
   },
   "hybrid_simulation": {
     "n_years_sim": 3.249,
