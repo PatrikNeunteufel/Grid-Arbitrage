@@ -132,7 +132,22 @@
   },
   "visualisierung": {
     "symlog_linthresh": 10000,
-    "output_dpi": 150
+    "output_dpi": 150,
+    "farben": {
+      "bg_dark": "#0d1117",
+      "bg_panel": "#141414",
+      "c_price": "#FFA726",
+      "c_load": "#66BB6A",
+      "c_charge": "#1565C0",
+      "c_feed": "#B71C1C",
+      "seg_colors": [
+        "#42A5F5",
+        "#66BB6A",
+        "#FFA726",
+        "#EF5350"
+      ]
+    },
+    "animation_dpi": 100
   },
   "api_keys": {
     "_hint": "API-Keys hier eintragen — nie im Notebook-Code hardcoden",

@@ -1,5 +1,0 @@
-segment,capex,annual_rev,opex_annual,net_annual,payback_years,roi_pct,rev_per_kwh
-Privat_10kWh,4000,92,60,32,125.0,0.8,18.4
-Gewerbe_100kWh,30000,1180,450,730,41.1,2.43,23.6
-Industrie_1MWh,220000,10200,3300,6900,31.9,3.14,20.4
-Utility_10MWh,1800000,89000,27000,62000,29.0,3.44,17.8

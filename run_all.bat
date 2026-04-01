@@ -19,6 +19,9 @@ setlocal enabledelayedexpansion
 rem ── Umgebung aktivieren ──────────────────────────────────────────────────────
 call C:\Users\patri\jupyter-env\Scripts\activate
 
+rem Asyncio ProactorLoop Warning unterdruecken (zmq/tornado, kein Fehler)
+set PYTHONASYNCIODEBUG=0
+
 set MODE=%~1
 set NB=%~2
 if "%MODE%"=="" set MODE=all
@@ -144,8 +147,8 @@ if not exist "%_FILE%" (
     echo   [--] %_FILE% nicht gefunden -- uebersprungen
     goto :eof
 )
-echo   [>>] %_NB%
-echo   [>>] %_NB% >> %LOG_FILE%
+echo   [^>^>] %_NB%
+(echo   [^>^>] %_NB%) >> %LOG_FILE%
 jupyter nbconvert --to notebook --execute --inplace ^
     --ExecutePreprocessor.timeout=%TIMEOUT% ^
     --ExecutePreprocessor.kernel_name=python3 ^
