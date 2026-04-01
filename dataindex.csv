@@ -30,6 +30,9 @@ timestamp,filename,source_url,local_path,data_type,rows,size_kb,status,supersede
 2026-03-31T18:59:24Z,wirtschaftlichkeit.csv,NB2:dispatch,data\intermediate\realistisch\wirtschaftlichkeit.csv,intermediate,4,0.5,superseded,2026-03-31T19:17:00Z,MODE=data
 2026-03-31T18:59:24Z,netzentlastung_szenarien.csv,NB02:szenario,data\intermediate\realistisch\netzentlastung_szenarien.csv,intermediate/realistisch,4,0.4,superseded,2026-03-31T19:17:00Z,"MODE=data, Gleichzeitigkeit=realistisch (40%)"
 2026-03-31T19:00:07Z,bfs_gemeinden.csv,https://www.pxweb.bfs.admin.ch/api/v1/de/px-x-0102010000_101/px-x-0102010000_101.px,data\intermediate\bfs_gemeinden.csv,intermediate,26,0.3,superseded,2026-03-31T19:17:39Z,"BFS STATPOP 2024, PXWeb API"
-2026-03-31T19:17:00Z,wirtschaftlichkeit.csv,NB2:dispatch,data\intermediate\realistisch\wirtschaftlichkeit.csv,intermediate,4,0.5,active,,MODE=data
-2026-03-31T19:17:00Z,netzentlastung_szenarien.csv,NB02:szenario,data\intermediate\realistisch\netzentlastung_szenarien.csv,intermediate/realistisch,4,0.4,active,,"MODE=data, Gleichzeitigkeit=realistisch (40%)"
-2026-03-31T19:17:39Z,bfs_gemeinden.csv,https://www.pxweb.bfs.admin.ch/api/v1/de/px-x-0102010000_101/px-x-0102010000_101.px,data\intermediate\bfs_gemeinden.csv,intermediate,26,0.3,active,,"BFS STATPOP 2024, PXWeb API"
+2026-03-31T19:17:00Z,wirtschaftlichkeit.csv,NB2:dispatch,data\intermediate\realistisch\wirtschaftlichkeit.csv,intermediate,4,0.5,superseded,2026-04-01T11:27:58Z,MODE=data
+2026-03-31T19:17:00Z,netzentlastung_szenarien.csv,NB02:szenario,data\intermediate\realistisch\netzentlastung_szenarien.csv,intermediate/realistisch,4,0.4,superseded,2026-04-01T11:27:58Z,"MODE=data, Gleichzeitigkeit=realistisch (40%)"
+2026-03-31T19:17:39Z,bfs_gemeinden.csv,https://www.pxweb.bfs.admin.ch/api/v1/de/px-x-0102010000_101/px-x-0102010000_101.px,data\intermediate\bfs_gemeinden.csv,intermediate,26,0.3,superseded,2026-04-01T11:28:37Z,"BFS STATPOP 2024, PXWeb API"
+2026-04-01T11:27:58Z,wirtschaftlichkeit.csv,NB2:dispatch,data\intermediate\realistisch\wirtschaftlichkeit.csv,intermediate,4,0.5,active,,MODE=data
+2026-04-01T11:27:58Z,netzentlastung_szenarien.csv,NB02:szenario,data\intermediate\realistisch\netzentlastung_szenarien.csv,intermediate/realistisch,4,0.4,active,,"MODE=data, Gleichzeitigkeit=realistisch (40%)"
+2026-04-01T11:28:37Z,bfs_gemeinden.csv,https://www.pxweb.bfs.admin.ch/api/v1/de/px-x-0102010000_101/px-x-0102010000_101.px,data\intermediate\bfs_gemeinden.csv,intermediate,26,0.3,active,,"BFS STATPOP 2024, PXWeb API"
