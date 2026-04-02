@@ -1,514 +1,657 @@
 # Notebook-Dokumentation — Grid-Arbitrage mit Batteriespeichern
 **SC26_Gruppe_2 · ZHAW CAS Information Engineering Scripting**
 
-> **Für wen ist dieses Dokument?**
-> Für jemanden, der grundlegendes Python versteht, aber noch nicht tief in Data Science eingetaucht ist. Jede Code-Zelle wird erklärt: was sie tut, warum sie es so tut, und welche Libraries dabei eine Rolle spielen.
-
-> **Projektidee in einem Satz:** Kann man Geld verdienen, indem man Strom kauft wenn er billig ist (nachts/mittags bei Solarüberschuss), ihn in einer Batterie speichert, und wieder einspeist wenn er teuer ist? Das Projekt berechnet das für die Schweiz mit echten Marktdaten.
+> **Zielgruppe:** Grundlegendes Python vorhanden, Data-Science-Einsteiger.
+> Jede Code-Zelle wird erklärt: was sie tut, warum, welche Library-Funktionen dabei eine Rolle spielen.
+> Jede Library-Funktion wird nur beim **ersten Auftreten** in einem eigenen Tabellenabschnitt beschrieben.
+> 
+> **Projektidee:** Kaufe Strom günstig (Preis-Tief), speichere ihn in einer Batterie, speise teuer ein (Preis-Hoch). Lohnt sich das in der Schweiz?
 
 ---
-
 ## NB00 — Projektübersicht (`00_Project_Overview.ipynb`)
-
-Dieses Notebook ist reine Verwaltung: Es zeigt den Projektstatus als formatierte Tabelle und hat keinen fachlichen Recheninhalt.
+Reine Projektverwaltung. Kein fachlicher Recheninhalt — nur Statustracking.
 
 ### Zelle 1
-**Was passiert:** Drei Statusbeschriftungen werden als Konstanten definiert (offene Aufgabe, in Arbeit, erledigt), dann wird eine verschachtelte Liste mit allen Projektaufgaben, Verantwortlichen, Fristen und Status aufgebaut. Am Ende druckt `pandas` das als lesbare Tabelle.
+**Was passiert:** Status-Konstanten für Aufgaben werden definiert (`⬜ Offen`, `🔄 In Arbeit`, `✅ Erledigt`). Eine verschachtelte Liste aller Projektaufgaben mit Verantwortlichkeit, Frist und Status wird aufgebaut und als formatierte Tabelle ausgegeben.
+**Warum so:** Ein einziger Blick zeigt den kompletten Projektstatus. `pandas` ist die einfachste Lösung für eine formatierte Tabelle im Notebook.
 
-**Warum so:** Ein einziger Blick auf die Ausgabe zeigt den aktuellen Projektstand. Pandas ist hier die einfachste Lösung für eine formatierte Tabelle im Notebook.
 
-**Verwendete Library:** `pandas` — die Standardbibliothek für tabellarische Daten in Python. Stell dir vor: Excel für Python.
+**Verwendete Bibliotheksobjekte & Funktionen (Erstnennung)**
+
+| Funktion / Objekt | Library | Beschreibung |
+|---|---|---|
+| `pd.DataFrame()` | `pandas` | Erstellt einen tabellarischen Datensatz (Zeilen × Spalten) aus einer Python-Liste oder einem Dictionary. Grundbaustein für alle Tabellenoperationen im Projekt. |
 
 ---
-
 ## NB00b — Konventionen & Architektur (`00b_Konventionen.ipynb`)
-
-Dieses Notebook enthält keine ausführbare Logik — es ist ein lebendiges Handbuch für das Team. Die einzige Code-Zelle ist auskommentiert.
+Lebendes Handbuch für das Team. Die einzige Code-Zelle ist vollständig auskommentiert.
 
 ### Zelle 1
-**Was passiert:** Alle Zeilen beginnen mit `#` — das ist Python-Kommentar, der Code wird nicht ausgeführt. Die Zelle zeigt ein Musterbeispiel, wie man korrekt eine CSV-Datei lädt und dann sofort in der nächsten Zelle verifiziert (Shape, Zeitraum, Nullwerte, Wertebereich). Am Ende steht `print('Musterzelle — nur zur Demonstration.')` — das ist das einzige, was beim Ausführen passiert.
+**Was passiert:** Alle Zeilen beginnen mit `#` — Python-Kommentar, kein ausführbarer Code. Die Zelle zeigt ein Musterbeispiel für den korrekten Ladeprozess (CSV laden, sofort verifizieren). Beim Ausführen passiert nur `print('Musterzelle — nur zur Demonstration.')`.
+**Warum so:** Referenzbeispiel für das Team, ohne echte Daten anzufassen.
 
-**Warum so:** Das Team braucht ein Referenzbeispiel für den korrekten Ladeprozess, ohne dass echte Daten angefasst werden. Auskommentierter Code als Vorlage ist eine gängige Notebook-Praxis.
+
+**Verwendete Bibliotheksobjekte & Funktionen (Erstnennung)**
+
+| Funktion / Objekt | Library | Beschreibung |
+|---|---|---|
+| `pd.read_csv()` | `pandas` | Lädt eine CSV-Datei von der Festplatte in einen DataFrame. Optionen: `parse_dates` konvertiert Spalten direkt zu Datetime-Objekten. |
+| `pd.to_datetime()` | `pandas` | Konvertiert Strings, Unix-Timestamps oder gemischte Formate in pandas-Timestamp-Objekte. `utc=True` normiert auf UTC-Zeitzone. |
 
 ---
-
 ## NB01 — Daten laden (`01_Daten_Laden.ipynb`)
+Einziger Zweck: echte Rohdaten von der ENTSO-E-API herunterladen und auf der Festplatte speichern. Alle nachgelagerten Notebooks bauen darauf auf.
 
-Dieses Notebook hat einen einzigen Zweck: echte Rohdaten von der ENTSO-E-API herunterladen und auf der Festplatte speichern. Alle anderen Notebooks bauen darauf auf.
+### Zelle 1 — Abhängigkeitsprüfung
+**Was passiert:** Für vier Pakete (`pandas`, `requests`, `numpy`, `entsoe-py`) wird geprüft, ob sie installiert sind. Fehlt eines, wird es automatisch über `pip install` nachinstalliert.
+**Warum so:** Jupyter-Notebooks laufen auf unterschiedlichen Rechnern. Diese Zelle stellt sicher, dass das Notebook überall ohne manuelle Installation funktioniert.
 
-**ENTSO-E** ist die europäische Vereinigung der Übertragungsnetzbetreiber — sie betreiben eine öffentliche API mit Strom-Marktdaten für ganz Europa.
 
-### Zelle 1
-**Was passiert:** Das Skript prüft, ob vier Python-Pakete installiert sind (`pandas`, `requests`, `numpy`, `entsoe-py`). Fehlt eines, wird es automatisch nachinstalliert.
+**Verwendete Bibliotheksobjekte & Funktionen (Erstnennung)**
 
-**Warum so:** Jupyter-Notebooks laufen auf verschiedenen Rechnern. Wer das Notebook zum ersten Mal öffnet, hat vielleicht nicht alle Abhängigkeiten installiert. Diese Zelle sorgt dafür, dass das Notebook überall funktioniert, ohne manuelle Installation.
+| Funktion / Objekt | Library | Beschreibung |
+|---|---|---|
+| `subprocess.check_call()` | `subprocess` | Führt einen externen Befehl aus (hier: `pip install`) und blockiert bis zum Abschluss. Wirft eine Exception wenn der Befehl fehlschlägt. |
+| `__import__()` | `builtins` | Versucht ein Modul zu importieren. Hier für Existenzprüfung: schlägt fehl → `ImportError` → Paket wird nachinstalliert. |
+### Zelle 2 — Konfiguration laden
+**Was passiert:** Libraries werden geladen, `config.json` wird als Python-Dictionary `CFG` eingelesen. Daraus werden Mode, Reload-Schalter, Datenzeitraum und Verzeichnispfade extrahiert. Die Hilfsfunktion `needs_download()` prüft, ob eine Datei fehlt, zu klein ist oder ein Neuladen erzwungen wird.
+**Warum so:** `config.json` ist der einzige Ort, wo Einstellungen gesetzt werden (Single Source of Truth). Code enthält nie hardcodierte Pfade oder Parameter.
 
-**Warum `subprocess`?** Weil man aus Python heraus den Paket-Manager `pip` aufrufen muss — das ist wie das Starten eines Terminal-Befehls (`pip install pandas`) direkt aus dem Python-Code.
 
-### Zelle 2
-**Was passiert:** Alle benötigten Libraries werden geladen, dann wird `config.json` geöffnet und als Python-Dictionary (`CFG`) gelesen. Aus diesem Dictionary werden die wichtigsten Einstellungen als Variablen extrahiert: der Modus (`data` für echte Daten), ob ein Neuladen erzwungen werden soll, und der Zeitraum (Startjahr bis "heute"). Alle Verzeichnisse für Rohdaten, verarbeitete Daten und Zwischenergebnisse werden definiert und angelegt (falls nicht vorhanden).
+**Verwendete Bibliotheksobjekte & Funktionen (Erstnennung)**
 
-**Warum so:** Die `config.json` ist die einzige Stelle im Projekt, wo Einstellungen gesetzt werden dürfen. Wenn man den Modus oder den Zeitraum ändern will, macht man das in der Config — nicht im Code. Das nennt man "Single Source of Truth" (SSOT). Die Funktion `needs_download()` prüft, ob eine Datei noch nicht existiert, zu klein ist (also offensichtlich unvollständig), oder ob ein Neuladen erzwungen wurde.
+| Funktion / Objekt | Library | Beschreibung |
+|---|---|---|
+| `json.load()` | `json` | Liest eine JSON-Datei und gibt ein Python-Dictionary/-List zurück. Hier für `config.json` (Einstellungen) und `transfer.json` (Notebook-zu-Notebook-Übergabe). |
+| `json.dump()` | `json` | Schreibt ein Python-Objekt als JSON in eine Datei. `indent=2` für lesbare Formatierung, `ensure_ascii=False` für Umlaute. |
+| `os.path.join()` | `os` | Setzt Pfadteile plattformunabhängig zusammen (Backslash auf Windows, Slash auf Linux/Mac). Immer dieser Funktion statt Stringverkettung. |
+| `os.makedirs()` | `os` | Erstellt ein Verzeichnis inkl. aller fehlenden Elternverzeichnisse. `exist_ok=True` unterdrückt den Fehler wenn das Verzeichnis bereits existiert. |
+| `os.path.exists()` | `os` | Prüft ob ein Pfad (Datei oder Verzeichnis) existiert. Gibt `True`/`False` zurück. |
+| `os.path.getsize()` | `os` | Gibt die Dateigrösse in Bytes zurück. Wird zur Validierung genutzt: Datei existiert aber ist zu klein → unvollständig, neu laden. |
+### Zelle 3 — Datenregister-Hilfsfunktionen
+**Was passiert:** Zwei Funktionen werden definiert. `log_dataindex()` schreibt jeden geladenen Datensatz in `dataindex.csv` — ein historisches Register mit Zeitstempel, Herkunft und Status. Wenn ein Eintrag für dieselbe Datei bereits existiert, wird der alte als `superseded` markiert. `log_missing()` schreibt fehlende Daten in `missing.txt`.
+**Warum so:** Forschungsprojekte brauchen Nachvollziehbarkeit: Woher kommen die Daten? Von wann? Wurden sie aktualisiert? Das beantwortet die `dataindex.csv` automatisch.
 
-**Verwendete Libraries:** `os` — Dateisystem (Pfade, Verzeichnisse anlegen). `json` — JSON-Dateien lesen und schreiben. `numpy` — wird hier nur geladen, aber im Projekt für numerische Berechnungen gebraucht. `warnings` — Unterdrückt harmlose Warnmeldungen, die Notebooks unlesbar machen würden.
 
-### Zelle 3
-**Was passiert:** Zwei Hilfsfunktionen werden definiert. `log_dataindex()` schreibt einen Eintrag in die `dataindex.csv` — ein zentrales Register aller Datensätze mit Zeitstempel, Herkunft und Status. Wenn ein Eintrag für dieselbe Datei bereits existiert, wird der alte als "superseded" (abgelöst) markiert. `log_missing()` schreibt fehlende Daten in eine `missing.txt`-Datei.
+**Verwendete Bibliotheksobjekte & Funktionen (Erstnennung)**
 
-**Warum so:** Bei Forschungsprojekten ist Nachvollziehbarkeit wichtig. "Woher kommen diese Daten? Von wann sind sie? Wurden sie neu geladen?" — das beantwortet die `dataindex.csv` automatisch. Der "superseded"-Mechanismus stellt sicher, dass man immer weiss, was aktuell gültig ist.
+| Funktion / Objekt | Library | Beschreibung |
+|---|---|---|
+| `pd.concat()` | `pandas` | Fügt mehrere DataFrames zusammen (vertikal oder horizontal). Ersetzt das veraltete `df.append()`. `ignore_index=True` setzt den Index neu. |
+| `datetime.utcnow()` | `datetime` | Gibt den aktuellen UTC-Zeitstempel zurück. `.isoformat(timespec='seconds')` formatiert als `2024-01-15T10:30:00` — maschinenlesbar und sortierbar. |
+### Zelle 4 — API-Verbindung & Spotpreis-Download
+**Was passiert:** Der ENTSO-E API-Schlüssel wird aus `config.json` gelesen. Dann wird geprüft, ob der API-Endpunkt erreichbar ist (HTTP-Status-Interpretation: 400 = erreichbar aber fehlende Parameter, 401 = ungültiger Key, 503 = Server überlastet aber erreichbar). Eine Funktion `_fetch_prices_year()` lädt Day-Ahead-Spotpreise für ein einzelnes Jahr mit bis zu 3 automatischen Wiederholungsversuchen bei 503-Fehlern.
+**Warum so:** Die ENTSO-E-API ist gelegentlich überlastet (503). Jahresweise Anfragen mit Retry-Logik ist robuster als ein einzelner Gesamtrequest. API-Keys werden nie im Code gespeichert — immer in der Config.
 
-**Technisches Detail:** `pd.concat([df_idx, pd.DataFrame([row])], ignore_index=True)` fügt eine neue Zeile am Ende der Tabelle hinzu. Das ist sicherer als `df.append()` (welches in neueren Pandas-Versionen entfernt wurde).
 
-### Zelle 4
-**Was passiert:** Der ENTSO-E API-Schlüssel wird aus der `config.json` gelesen (niemals im Code selbst). Dann wird geprüft, ob der ENTSO-E-Server erreichbar ist — nicht die Website, sondern direkt der API-Endpunkt. HTTP-Antwortcodes werden interpretiert: 400 bedeutet "Server erreichbar, aber fehlende Parameter" (erwartet), 401 bedeutet "ungültiger Key", 503 bedeutet "Server überlastet". Danach wird eine Funktion `_fetch_prices_year()` definiert, die Spotpreise für ein einzelnes Jahr herunterlädt — mit bis zu 3 automatischen Wiederholungsversuchen bei 503-Fehlern.
+**Verwendete Bibliotheksobjekte & Funktionen (Erstnennung)**
 
-**Warum so:** Der ENTSO-E-Server ist manchmal überlastet und antwortet mit 503. Ein direkter Download für mehrere Jahre auf einmal schlägt dann fehl. Die Lösung: jahresweise laden, bei Fehler kurz warten und nochmal versuchen. Das nennt man "Retry-Logik".
+| Funktion / Objekt | Library | Beschreibung |
+|---|---|---|
+| `requests.get()` | `requests` | Sendet einen HTTP GET-Request. `params=` für URL-Parameter, `timeout=` verhindert ewiges Warten, `stream=True` für grosse Dateien in Stücken. |
+| `pd.Timestamp()` | `pandas` | Erzeugt einen einzelnen Zeitpunkt mit Zeitzoneninfo. `tz='Europe/Zurich'` ist wichtig für korrekte Winterzeit/Sommerzeit-Behandlung. |
+| `EntsoePandasClient()` | `entsoe` | Client für die ENTSO-E Transparency Platform API. Wandelt die komplexen XML-Antworten automatisch in pandas DataFrames/Series um. |
+| `.query_day_ahead_prices()` | `entsoe` | Lädt Day-Ahead-Spotpreise für ein Land und Zeitraum (hier Schweiz `'CH'`). Gibt eine pandas Series zurück: Index = Timestamp, Werte = EUR/MWh. |
+| `.query_load()` | `entsoe` | Lädt die tatsächliche Systemlast (Netzlast) für ein Land. Index = Timestamp, Werte = MW. |
+### Zellen 5 & 7 — Verifikation
+**Was passiert:** Nach jedem Download: Shape, Zeitraum, Nullwerte und Wertebereich ausgeben, erste Zeilen anzeigen.
+**Warum so:** Datenfehler (falsche Einheit, fehlende Monate, API-Antwortformat geändert) fallen sofort auf.
+### Zelle 6 — Netzlast-Download
+**Was passiert:** Strukturell identisch zu Zelle 4 — gleiche Retry-Logik, andere API-Methode (`query_load`). Resultat: stündliche Systemlast des Schweizer Regelblocks in GW.
+### Zelle 8 — Transfer-Output
+**Was passiert:** Datenzeitraum (Startjahr, Endjahr, Anzahl tatsächlicher Jahre) wird in `transfer.json` geschrieben. NB02 liest diesen Wert für korrekte Jahresdurchschnitt-Berechnungen.
+**Warum so:** `transfer.json` ist der Kommunikationskanal zwischen Notebooks. Kein Notebook macht Annahmen über Datenzeiträume — es liest immer aus dieser Datei.
+### Zelle 9 — Abschlusskontrolle
+**Was passiert:** Alle Output-Dateien werden auf Existenz und Mindestgrösse geprüft. ✅/❌ Ausgabe. Inhalt von `dataindex.csv` anzeigen.
 
-**Verwendete Library:** `requests` — HTTP-Anfragen aus Python. Wie ein Browser, der eine Webseite aufruft, nur programmatisch. `entsoe-py` — ein spezielles Paket für die ENTSO-E-API, das die komplexen XML-Antworten automatisch in pandas DataFrames umwandelt.
 
-### Zelle 5
-**Was passiert:** Die heruntergeladenen Spotpreisdaten werden kurz verifiziert: Wie viele Zeilen? Welcher Zeitraum? Gibt es fehlende Werte? Welcher Preisbereich? Dann werden die ersten drei Zeilen angezeigt.
+**Verwendete Bibliotheksobjekte & Funktionen (Erstnennung)**
 
-**Warum so:** Nach jedem Daten-Download ist eine sofortige Verifikation Pflicht. Liefert die API plötzlich Werte in einer anderen Einheit? Fehlen ganze Monate? Das fällt hier sofort auf.
-
-### Zelle 6
-**Was passiert:** Analog zu Zelle 4 — dieselbe Retry-Logik, aber jetzt für die Netzlastdaten (wie viel Strom die Schweiz zu jedem Zeitpunkt verbraucht). Die Funktion `_fetch_load_year()` ist strukturell identisch mit `_fetch_prices_year()`.
-
-**Warum so:** Spotpreise und Netzlast kommen von derselben API, haben dieselben Probleme (503-Fehler, Zeitzonenkomplikationen), und brauchen deshalb dieselbe Lösung. Code-Wiederholung statt Abstraktion ist hier bewusst gewählt, damit jede Funktion für sich lesbar ist.
-
-### Zelle 7
-**Was passiert:** Dieselbe Verifikation wie in Zelle 5, jetzt für die Netzlastdaten. Einheit ist Gigawatt (GW), nicht Megawatt/h.
-
-### Zelle 8
-**Was passiert:** Der Datenzeitraum (Startjahr, Endjahr, Anzahl tatsächlicher Jahre) wird in die `transfer.json` geschrieben. Diese Datei ist der Kommunikationskanal zwischen Notebooks — NB02 liest diesen Wert, um Jahresdurchschnitte korrekt zu berechnen.
-
-**Warum so:** Wenn man NB01 mit mehr Daten neu ausführt (z.B. jetzt auch 2026), sollen alle nachgelagerten Notebooks automatisch mit der richtigen Anzahl Jahre rechnen. `transfer.json` ist die "Schnittstelle" zwischen den Notebooks — kein Notebook macht Annahmen über Zeiträume, es liest immer aus dieser Datei.
-
-**Technisches Detail:** Der Code prüft zuerst, ob `transfer.json` bereits existiert und nicht leer ist, und lädt dann den bestehenden Inhalt — so werden nur die relevanten Schlüssel aktualisiert, der Rest bleibt erhalten.
-
-### Zelle 9
-**Was passiert:** Abschlusskontrolle: Für jede Pflicht-Datei wird geprüft, ob sie existiert und mindestens die Mindestgrösse hat. Ergebnis wird mit ✅/❌ angezeigt. Am Ende wird der Inhalt der `dataindex.csv` angezeigt.
-
-**Warum so:** Ein klares "Go / No-Go" am Ende jedes Notebooks. Wer NB02 starten will, sieht auf einen Blick, ob alle Voraussetzungen erfüllt sind.
+| Funktion / Objekt | Library | Beschreibung |
+|---|---|---|
+| `os.listdir()` | `os` | Gibt alle Dateien und Verzeichnisse in einem Ordner als Liste zurück. Hier für die Abschlusskontrolle: welche Charts/Dateien wurden erzeugt? |
 
 ---
-
 ## NB02 — Datenanalyse & Dispatch-Simulation (`02_Daten_Analyse.ipynb`)
+Das Herzstück des Projekts. Rohdaten bereinigen, Batterie-Dispatch simulieren, wirtschaftliche Kennzahlen berechnen.
 
-Das Herzstück des Projekts. Hier werden die Rohdaten bereinigt, der Batterie-Dispatch simuliert und die wirtschaftlichen Kennzahlen berechnet. Die Ergebnisse fliessen in alle anderen Notebooks ein.
+### Zelle 1 — Konfiguration & Parameter
+**Was passiert:** Alle Simulations- und Wirtschaftlichkeitsparameter werden aus `config.json` geladen: Lade-/Entladequantil (0.25/0.75), SoC-Grenzen (5%/95%), Wirkungsgrad (92%), CAPEX pro kWh je Segment, OPEX-Rate (1.5%/Jahr), Lebensdauer (12 Jahre). Der Ziel-ROI wird lokal als `100/12 ≈ 8.3%/Jahr` berechnet — nie in der Config gespeichert, weil er eine abgeleitete Grösse ist.
+**Warum so:** SSOT-Prinzip. Alles aus der Config, keine Magie-Zahlen im Code.
 
-### Zelle 1
-**Was passiert:** Libraries laden, `config.json` lesen. Alle Simulations-Parameter werden aus der Config extrahiert: Lade-Quantil (0.25 = laden wenn Preis im untersten Viertel des Tages), Entlade-Quantil (0.75), minimaler/maximaler Ladezustand (5%/95%), Wirkungsgrad (92%). Wirtschaftlichkeits-Parameter: CAPEX pro kWh je Segment, OPEX-Rate (1.5%/Jahr), Lebensdauer (12 Jahre), daraus wird der Ziel-ROI berechnet (100/12 ≈ 8.3%/Jahr). Gleichzeitigkeitsszenario aus der Config laden und alle nötigen Verzeichnisse definieren.
 
-**Warum so:** Dieselbe Struktur wie NB01. Alle Parameter kommen aus der Config — so kann man z.B. auf `optimistisch` wechseln, ohne eine Zeile Code zu ändern. Der Ziel-ROI wird berechnet (nicht aus der Config geladen), weil er eine abgeleitete Grösse ist: "Wie viel Rendite pro Jahr brauche ich, um in 12 Jahren die Investition zurückzuhaben?"
+**Verwendete Bibliotheksobjekte & Funktionen (Erstnennung)**
 
-### Zelle 2
-**Was passiert:** `transfer.json` wird geöffnet und `n_years` (Anzahl der simulierten Jahre) wird ausgelesen. Diesen Wert hat NB01 dort hineingeschrieben. Falls die Datei fehlt, gibt es eine Warnung.
+| Funktion / Objekt | Library | Beschreibung |
+|---|---|---|
+| `warnings.filterwarnings()` | `warnings` | Unterdrückt Python-Warnmeldungen (z.B. pandas DeprecationWarnings). `'ignore'` schaltet alle aus — sinnvoll für Notebooks um die Ausgabe lesbar zu halten. |
+### Zelle 2 — n_years aus transfer.json
+**Was passiert:** `transfer.json` wird geöffnet, `n_years` (Anzahl tatsächlich simulierter Datenjahre) wird ausgelesen. Dieser Wert kommt von NB01. Falls die Datei fehlt: Warnung und `n_years = None`.
+**Warum so:** Jahresdurchschnitt = Gesamterlös ÷ n_years. Dieser Wert muss aus NB01 kommen, damit er mit den tatsächlich geladenen Daten übereinstimmt.
 
-**Warum so:** `n_years` ist entscheidend für alle Wirtschaftlichkeitsrechnungen. Wenn man z.B. Daten von 2023 bis 2025 hat, sind das 3 Jahre. Den Jahres-Erlös berechnet man dann als Gesamterlös ÷ 3. Dieser Wert muss aus NB01 kommen, nicht selbst geschätzt werden.
 
-### Zelle 3
-**Was passiert:** Dieselben Hilfsfunktionen `log_dataindex()` und `log_missing()` wie in NB01, plus `needs_rebuild()` — prüft ob eine verarbeitete Datei neu berechnet werden muss.
+**Verwendete Bibliotheksobjekte & Funktionen (Erstnennung)**
 
-**Warum so:** Diese Funktionen werden in jedem Notebook neu definiert, das Dateien schreibt. Das ist Wiederholung, aber jedes Notebook bleibt damit für sich ausführbar — man muss nicht zuerst ein anderes Notebook laufen lassen, um diese Hilfsfunktionen verfügbar zu haben.
+| Funktion / Objekt | Library | Beschreibung |
+|---|---|---|
+| `json.loads()` | `json` | Parst JSON direkt aus einem String (nicht aus einer Datei). Hier zum Lesen einer Datei mit leerem Inhalt-Guard: `json.loads(f.read() or '{}')` |
+### Zelle 3 — Hilfsfunktionen (Datenregister)
+**Was passiert:** `log_dataindex()` und `log_missing()` wie in NB01. Zusätzlich: `needs_rebuild()` — prüft ob eine verarbeitete Datei neu berechnet werden muss (fehlt, zu wenig Zeilen, oder FORCE_RELOAD gesetzt).
+**Warum so:** Jedes Notebook ist für sich ausführbar. Deswegen werden diese Helfer in jedem Notebook neu definiert statt importiert.
+### Zellen 4–6 — Rohdaten laden & bereinigen
+**Was passiert:** Rohdaten von der Festplatte laden. Dann Bereinigung in 5 Schritten:
+1. Zeitstempel auf UTC normieren und sortieren
+2. Vollständigen Stundenraster erzwingen: `pd.date_range(..., name='timestamp')` + `.reindex()` → fehlende Stunden werden als NaN eingefügt, kein `.rename()` mehr nötig
+3. Lücken bis 3h linear interpolieren, längere mit `.ffill(limit=6).bfill(limit=6)` auffüllen
+4. Extreme Ausreisser kappen: < -500 oder > 3000 EUR/MWh
+5. Zeitfeatures ableiten: Stunde, Monat, Wochentag, Jahreszeit via `(month % 12) // 3`
 
-### Zelle 4
-**Was passiert:** Die beiden Rohdatensätze (Spotpreise, Netzlast) werden von der Festplatte geladen und kurz auf ihre Struktur geprüft.
 
-**Warum so:** NB01 hat die Daten gespeichert, NB02 liest sie — das ist die saubere Trennung: Laden und Verarbeiten sind zwei verschiedene Schritte.
+**Verwendete Bibliotheksobjekte & Funktionen (Erstnennung)**
 
-### Zelle 5
-**Was passiert:** Die Rohdaten werden bereinigt:
-1. Zeitstempel werden auf UTC normiert (einheitliche Zeitzone für alle Berechnungen)
-2. Ein lückenloser Stundenraster wird erzwungen — fehlen Stunden in den Daten, werden sie als leere Zeilen eingefügt
-3. Lücken bis zu 3 Stunden werden linear interpoliert (geschätzter Mittelwert), längere Lücken mit dem letzten bekannten Wert aufgefüllt
-4. Extreme Ausreisser werden gekappt (unter -500 EUR/MWh oder über 3000 EUR/MWh)
-5. Zeitliche Merkmale werden berechnet: Stunde des Tages, Monat, Wochentag, Jahreszeit
-6. Die bereinigte Datei wird als `ch_spot_prices_clean.csv` gespeichert
+| Funktion / Objekt | Library | Beschreibung |
+|---|---|---|
+| `pd.date_range()` | `pandas` | Erzeugt einen lückenlosen Zeitreihen-Index. `freq='1h'` = stündlich, `tz='UTC'` = UTC-Zeitzone, `name='timestamp'` setzt den Spaltennamen nach `reset_index()` automatisch. |
+| `.set_index()` | `pandas` | Setzt eine Spalte als DataFrame-Index. Wird mit `.reindex()` kombiniert um fehlende Zeitstempel einzufügen. |
+| `.reindex()` | `pandas` | Richtet den DataFrame auf einen neuen Index aus. Fehlende Werte werden als `NaN` eingefügt — so werden Lücken im Stunden-Raster sichtbar gemacht. |
+| `.reset_index()` | `pandas` | Verwandelt den Index zurück in eine normale Spalte. Typisch nach `set_index()` + `reindex()`. |
+| `.interpolate()` | `pandas` | Füllt NaN-Werte durch Interpolation. `method='linear'` zieht eine Gerade zwischen zwei bekannten Werten. `limit=3` begrenzt auf maximal 3 aufeinanderfolgende NaN. |
+| `.ffill()` | `pandas` | Forward Fill: füllt NaN mit dem letzten bekannten Wert (vorwärts). `limit=6` begrenzt die Anzahl auffüllbarer aufeinanderfolgender NaN. Modernere Alternative zu `fillna(method='ffill')`. |
+| `.bfill()` | `pandas` | Backward Fill: füllt NaN mit dem nächsten bekannten Wert (rückwärts). Wird nach `ffill()` verwendet um verbleibende NaN am Anfang der Serie zu füllen. |
+| `.clip()` | `pandas / numpy` | Begrenzt Werte auf ein Intervall [min, max]. Werte ausserhalb werden auf den nächsten Grenzwert gesetzt. Verhindert Ausreisser-Effekte auf Berechnungen. |
+| `.dt.hour` | `pandas (.dt)` | Zugriff auf Datetime-Komponenten einer Spalte. `.dt.hour` = Stunde (0–23), `.dt.month` = Monat (1–12), `.dt.dayofweek` = Wochentag (0=Montag). |
+| `.dt.date` | `pandas (.dt)` | Extrahiert das Datum (ohne Uhrzeit) als `datetime.date`-Objekt. Wird für tagesweise Gruppenbildung verwendet. |
+### Zelle 7 — Tagesprofil & Spread-Analyse
+**Was passiert:** Für jede Stunde des Tages (0–23) werden Durchschnitt und Standardabweichung des Preises berechnet. Die 4 günstigsten und 4 teuersten Stunden werden identifiziert. Der Arbitrage-Spread (Preisunterschied) wird berechnet. Saisonale Durchschnitte werden ausgegeben.
+**Warum so:** Beantwortet die Kernfrage: Wie gross ist das Arbitrage-Potential im Tages-Rhythmus? Wie unterscheiden sich die Jahreszeiten?
 
-**Warum so:** Echte API-Daten sind selten perfekt. Stunden können fehlen (API-Ausfall, Sommerzeit-Umstellung). Negative Preise bis -500 EUR/MWh sind real (zu viel Solar), aber -9999 ist ein Datenfehler. Zeitfeatures braucht man für die Dispatch-Logik (welche Stunde des Tages ist es?). Das `reindex` auf den vollständigen Stundenraster ist ein eleganter Pandas-Trick: statt Lücken zu suchen, sagt man einfach "mein Index soll jede Stunde haben" und Pandas ergänzt die fehlenden.
 
-**Verwendete Funktion:** `.interpolate(method='linear', limit=3)` füllt bis zu 3 aufeinanderfolgende NaN-Werte durch lineare Interpolation (Linie zwischen den Nachbarn).
+**Verwendete Bibliotheksobjekte & Funktionen (Erstnennung)**
 
-### Zelle 6
-**Was passiert:** Verifikation der bereinigten Daten: Form, Datentypen, neue Spalten, fehlende Werte, erste Zeilen anzeigen.
+| Funktion / Objekt | Library | Beschreibung |
+|---|---|---|
+| `.groupby()` | `pandas` | Gruppiert einen DataFrame nach einer oder mehreren Spalten. Ermöglicht Aggregation pro Gruppe. Hier z.B. Durchschnittspreis pro Stunde oder pro Saison. |
+| `.agg()` | `pandas` | Wendet mehrere Aggregationsfunktionen auf eine Gruppe an. `agg(mean='mean', std='std')` berechnet Mittelwert und Standardabweichung in einem Durchgang. |
+| `.nsmallest()` | `pandas` | Gibt die n kleinsten Werte einer Serie zurück (schneller als sort + head). Hier: die 4 günstigsten Stunden. |
+| `.nlargest()` | `pandas` | Gibt die n grössten Werte zurück. Hier: die 4 teuersten Stunden. |
+### Zelle 8 — Dispatch-Simulation (Kernfunktion)
+**Was passiert:** `simulate_battery()` wird definiert — der algorithmische Kern des Projekts. Das Schwellenwertmodell:
+- **Schritt 1:** Für jeden Tag werden p25 und p75 *einmalig vorab* als NumPy-Arrays berechnet (O(n), nicht O(n²))
+- **Schritt 2:** Preise und Schwellenwerte werden als NumPy-Arrays extrahiert (kein `iterrows()`)
+- **Schritt 3:** Stunden-Simulation: Preis ≤ p25 UND SoC < 95% → laden; Preis ≥ p75 UND SoC > 5% → einspeisen
+**Warum NumPy?** Für 26.000 Stunden (3 Jahre) wäre `iterrows()` etwa 50× langsamer. NumPy läuft in optimiertem C-Code.
+**Warum sequenziell?** Der SoC (Ladezustand) einer Stunde hängt vom SoC der Vorherigen ab — das kann nicht vektorisiert werden.
 
-### Zelle 7
-**Was passiert:** Das Tagesprofil der Strompreise wird analysiert. Für jede Stunde des Tages (0–23) werden Durchschnitt und Standardabweichung berechnet. Die 4 günstigsten und 4 teuersten Stunden werden identifiziert. Der Arbitrage-Spread (Preisunterschied zwischen teuren und günstigen Stunden) wird berechnet. Saisonale Durchschnitte werden ausgegeben.
 
-**Warum so:** Dieser Abschnitt beantwortet die Kernfrage: Wie gross ist das Arbitrage-Potential im Durchschnitt? Wenn der Spread 30 EUR/MWh beträgt und die Batterie 10 kWh fasst, kann man theoretisch 0.30 EUR pro vollständigem Lade-/Entladezyklus verdienen.
+**Verwendete Bibliotheksobjekte & Funktionen (Erstnennung)**
 
-### Zelle 8
-**Was passiert:** Die Dispatch-Simulation wird als Funktion `simulate_battery()` definiert. Dies ist der algorithmische Kern des Projekts:
+| Funktion / Objekt | Library | Beschreibung |
+|---|---|---|
+| `np.empty()` | `numpy` | Erstellt ein uninitialisiertes Array mit gegebener Form und dtype. Schneller als `np.zeros()` wenn alle Werte sofort überschrieben werden. Hier für das `actions`-Array (Strings). |
+| `np.zeros()` | `numpy` | Erstellt ein Array mit lauter Nullen. Geeignet für Cashflow- und Grid-Delta-Initialisierung — Standard-Startwert ist 0. |
+| `.to_numpy()` | `pandas` | Konvertiert eine pandas Series in ein NumPy-Array. Ermöglicht schnellen Zugriff ohne Python-Overhead. Notwendig für die Dispatch-Simulation. |
+### Zelle 9 — Simulation aller Segmente
+**Was passiert:** `simulate_battery()` wird für alle 4 Segmente ausgeführt (Privat 10 kWh, Gewerbe 100 kWh, Industrie 1 MWh, Utility 10 MWh). Jahreserlös = Gesamterlös ÷ n_years. Ergebnisse werden tabellarisch ausgegeben.
+**Warum Durchschnitt statt nur ein Jahr?** Jahres-Preise schwanken stark. Durchschnitt über mehrere Jahre ist realistischer.
 
-**Schritt 1:** Für jeden Tag wird der 25%-Quantil-Preis (Ladechwellenwert) und 75%-Quantil-Preis (Entladeschwellenwert) berechnet — einmalig vorab für alle Tage, nicht für jede Stunde separat.
 
-**Schritt 2:** Alle Daten werden als NumPy-Arrays aufbereitet. Das ist entscheidend für die Geschwindigkeit: Python-Schleifen über Pandas-Zeilen (`iterrows()`) sind extrem langsam, Arrays in NumPy laufen in optimiertem C-Code.
+**Verwendete Bibliotheksobjekte & Funktionen (Erstnennung)**
 
-**Schritt 3:** Die eigentliche Stunden-für-Stunden-Simulation. Für jede Stunde: Wenn Preis unter dem Tagesschwellenwert und Batterie nicht voll → laden. Wenn Preis über dem Schwellenwert und Batterie nicht leer → entladen. Der Wirkungsgrad (92%) wird auf den Ladevorgang angewendet (Square-Root-Trick: beim Laden geht Energie verloren, beim Entladen auch, zusammen macht das ~85% Round-Trip).
+| Funktion / Objekt | Library | Beschreibung |
+|---|---|---|
+| `.dt.year` | `pandas (.dt)` | Extrahiert das Jahr aus einer Datetime-Spalte. `.dt.year.nunique()` = Anzahl verschiedener Jahre im Datensatz — wird als Fallback für n_years verwendet. |
+### Zelle 10 — CAPEX / ROI / Amortisation
+**Was passiert:** Für jedes Segment: CAPEX (Investition = kWh × EUR/kWh), OPEX (1.5% CAPEX/Jahr), Netto-Erlös (Jahreserlös − OPEX), Amortisationszeit (CAPEX ÷ Netto), ROI (Netto/CAPEX × 100). Alles wird als CSV gespeichert.
+**Warum OPEX abziehen?** Wartung, Versicherung, Monitoring kosten auch wenn die Batterie nichts verdient. 1.5% ist ein Branchenwert für Heimspeicher CH.
+### Zelle 12 — Gleichzeitigkeits-Szenarien
+**Was passiert:** 4 Szenarien (Status Quo, Moderat 2027, Ambitioniert 2030, Transformativ 2035) mit unterschiedlicher Anzahl Batteriesysteme. Gleichzeitigkeitsrate aus Config (z.B. 40%) skaliert die theoretische Leistung auf die reale Netzentlastung in MW.
+**Warum Gleichzeitigkeit?** 50.000 Heimspeicher à 5 kW = 250 MW theoretisch. Bei 40% Gleichzeitigkeit = 100 MW real — weil nicht alle zur gleichen Sekunde einspeisen.
+### Zelle 13 — Spread-Zeitreihe
+**Was passiert:** Für jeden Tag wird der Intra-Tag-Spread berechnet (p75 − p25). Optimiert: statt zweier Lambda-`agg()`-Aufrufe ein einziger `.quantile([0.25, 0.75]).unstack()`. Tageswerte werden pro Monat zum Median aggregiert. Zusätzlich: Volatilität, Durchschnittspreis, Negativpreis-Stunden.
 
-**Warum NumPy statt Pandas-Loop?** Für 26.000 Stunden (3 Jahre) wäre ein `iterrows()`-Loop etwa 50-mal langsamer als NumPy-Arrays. Bei 4 Segmenten wäre das spürbar. Mit NumPy läuft die gesamte Simulation in Sekunden.
 
-**Verwendete Library:** `numpy` — Numerische Berechnungen mit Arrays. Stell dir vor: Taschenrechner-Operationen auf tausende Zahlen gleichzeitig, statt eine nach der anderen.
+**Verwendete Bibliotheksobjekte & Funktionen (Erstnennung)**
 
-### Zelle 9
-**Was passiert:** Die Simulation wird für alle vier Marktsegmente ausgeführt:
-- Privat (10 kWh, 5 kW Leistung)
-- Gewerbe (100 kWh, 30 kW)
-- Industrie (1 MWh, 200 kW)
-- Utility (10 MWh, 1000 kW)
-
-Der jährliche Erlös wird als Durchschnitt über alle simulierten Jahre berechnet (Gesamterlös ÷ n_years). Ergebnisse werden tabellarisch ausgegeben.
-
-**Warum Durchschnitt statt nur ein Jahr?** Weil Preise von Jahr zu Jahr schwanken. Ein einzelnes Jahr könnte ungewöhnlich hohe oder niedrige Spreads haben. Der Durchschnitt über mehrere Jahre ist ein realistischerer Massstab.
-
-### Zelle 10
-**Was passiert:** Für jedes Segment werden die wirtschaftlichen Kennzahlen berechnet:
-- **CAPEX:** Anfangsinvestition (Kapazität × CAPEX pro kWh aus der Config)
-- **OPEX:** Jährliche Betriebskosten (1.5% des CAPEX)
-- **Netto-Erlös:** Jahreserlös minus OPEX
-- **Amortisation:** CAPEX ÷ Netto-Erlös = Anzahl Jahre bis zur Rückzahlung
-- **ROI:** Netto-Erlös ÷ CAPEX × 100 = Rendite in Prozent pro Jahr
-
-Alles wird als CSV gespeichert.
-
-**Warum OPEX abziehen?** Weil eine Batterie Wartung, Versicherung und Monitoring kostet, auch wenn sie nichts einspeist. Diese Kosten fressen einen Teil des Erlöses auf. 1.5% ist ein branchenüblicher Schätzwert für Heimspeicher in der Schweiz.
-
-### Zelle 11
-**Was passiert:** Kurze Verifikation der Wirtschaftlichkeitstabelle: Anzahl Segmente, erste Zeilen.
-
-### Zelle 12
-**Was passiert:** Szenarien für die Netzentlastung werden berechnet. Es gibt vier Zeitpunkte (Status Quo, Moderat 2027, Ambitioniert 2030, Transformativ 2035) mit jeweils unterschiedlicher Anzahl Batteriesysteme je Segment. Die Gleichzeitigkeitsrate aus der Config (z.B. 40% beim "realistischen" Szenario) skaliert die theoretische Leistung — weil nicht alle Batterien gleichzeitig einspeisen. Das Ergebnis: wie viele MW Spitzenlast werden vom Netz entlastet?
-
-**Warum Gleichzeitigkeit?** Stell dir vor, 50.000 Privathaushalte haben je eine 5-kW-Batterie. Theoretisch wären das 250 MW. Aber nicht alle laden/entladen zur exakt gleichen Sekunde. Bei 40% Gleichzeitigkeit sind es real nur 100 MW, die das Netz gleichzeitig entlasten. Das ist trotzdem bedeutsam für den Netzbetrieb.
-
-### Zelle 13
-**Was passiert:** Die monatliche Spread-Zeitreihe wird berechnet: Für jeden Tag wird der Intra-Tag-Spread berechnet (p75-Preis minus p25-Preis). Diese Tageswerte werden pro Monat zu einem Median aggregiert. Zusätzlich: Volatilität, Durchschnittspreis und Anzahl Stunden mit negativen Preisen pro Monat. Alles wird als `spread_zeitreihe.csv` gespeichert.
-
-**Warum Median statt Mittelwert?** Der Median ist robuster gegen einzelne extreme Tage. Ein Sturm-Tag mit extremem Spread würde den Monatsdurchschnitt verzerren, den Median kaum.
-
-### Zelle 14
-**Was passiert:** Verifikation der Spread-Zeitreihe.
-
-### Zelle 15
-**Was passiert:** Alle berechneten Kennzahlen werden in `transfer.json` geschrieben: Spread-Statistiken, Anzahl Simulationsjahre, und für jedes Segment ROI, Netto-Erlös, Jahreserlös, CAPEX und Amortisationszeit.
-
-**Warum so:** Alle nachgelagerten Notebooks (NB05 Business Strategy, NB08 Marktdynamik usw.) brauchen diese Werte. Statt überall neu zu berechnen, liest jedes Notebook einfach aus `transfer.json`. Wenn NB02 neu läuft, werden automatisch alle anderen Notebooks mit aktuellen Werten versorgt.
-
-### Zelle 16
-**Was passiert:** Abschlusskontrolle für NB02: Alle Output-Dateien werden auf Existenz und Mindestgrösse geprüft. Dann ein Hinweis: Grenzflüsse und BFE-Daten werden erst in den Kür-Notebooks NB06/NB07 geladen.
+| Funktion / Objekt | Library | Beschreibung |
+|---|---|---|
+| `.quantile()` | `pandas` | Berechnet Quantile einer Serie. `.quantile([0.25, 0.75])` gibt beide auf einmal zurück. Nachgelagertes `.unstack()` verwandelt das MultiIndex-Ergebnis in Spalten `p25`/`p75`. |
+| `.unstack()` | `pandas` | Klappt den innersten Index einer MultiIndex-Serie in Spalten um. Typisch nach `.groupby().quantile([...])` um eine breite Tabelle zu erhalten. |
+| `.merge()` | `pandas` | Verknüpft zwei DataFrames per Schlüsselspalte (wie SQL JOIN). `on='yearmonth'` = beide DataFrames haben eine Spalte `yearmonth` als gemeinsamen Schlüssel. |
+| `.dt.to_period()` | `pandas (.dt)` | Konvertiert Timestamps in Zeiträume (z.B. `'M'` = Monat). `.dt.to_timestamp()` wandelt zurück in den Perioden-Beginn. Wird für monatliche Aggregation genutzt. |
+| `.median()` | `pandas` | Berechnet den Median (mittlerer Wert) — robuster gegen Ausreisser als der Mittelwert. Ein extremer Spread-Tag verzerrt den Monats-Median kaum. |
+### Zelle 15 — Transfer-Output
+**Was passiert:** Alle berechneten Kennzahlen werden in `transfer.json` geschrieben: Spread-Statistiken, n_years, ROI/Erlös/CAPEX pro Segment. Optimiert: statt `iterrows()` eine `zip()`-basierte Dict-Comprehension über die 4 Segmentspalten.
+**Warum?** Alle nachgelagerten Notebooks (NB05/NB08 usw.) lesen diese Werte statt selbst zu berechnen.
 
 ---
-
 ## NB03 — Visualisierungen (`03_Visualisierungen.ipynb`)
+Erzeugt alle Pflicht-Charts (8 Charts + Einzelplots). Keine Berechnungen — liest aus NB02, stellt grafisch dar.
 
-Dieses Notebook erzeugt alle 8 Pflicht-Charts. Es berechnet nichts — es liest die bereits berechneten Daten aus NB02 und stellt sie grafisch dar.
+### Zelle 1 — Setup & Daten laden
+**Was passiert:** Libraries laden, Config lesen, Farb- und Stil-Konstanten aus `config.json` entpacken, `matplotlib.rcParams` global setzen. Dann vier CSVs laden. FIX: `rev_per_kwh` wird falls fehlend vektorisiert berechnet: `(df_econ['annual_rev'] * 2) / df_econ['segment'].map(CAP_MAP)` — kein `apply(axis=1)` mehr.
+**Warum rcParams global?** Ohne diese Einstellung müsste jeder der 8 Charts dieselben 10 Zeilen Formatierungscode wiederholen.
 
-### Zelle 1
-**Was passiert:** Libraries laden, config.json lesen. Wichtig: Die Farben und Stil-Konstanten werden aus der Config geladen (`_viz = CFG.get('visualisierung', {}).get('farben', {})`). `matplotlib.rcParams` wird global gesetzt — das bedeutet, alle nachfolgenden Charts erben automatisch die dunkle Hintergrundfarbe, die Tick-Farben, Schriftgrössen etc. Dann werden vier CSV-Dateien geladen: bereinigte Preise, Wirtschaftlichkeit, Netzentlastungsszenarien, Netzlastdaten.
 
-**Warum rcParams global?** Ohne globale Einstellungen müsste jeder der 8 Charts dieselben 10 Zeilen Formatierungs-Code wiederholen (`ax.set_facecolor(...)`, `ax.tick_params(...)`, usw.). Mit `rcParams.update()` wird das einmal definiert und gilt überall.
+**Verwendete Bibliotheksobjekte & Funktionen (Erstnennung)**
 
-**Verwendete Library:** `matplotlib` — die Standard-Visualisierungsbibliothek für Python. Denk an eine programmatische Version von Excel-Charts.
+| Funktion / Objekt | Library | Beschreibung |
+|---|---|---|
+| `matplotlib.rcParams.update()` | `matplotlib` | Setzt globale Standardwerte für alle nachfolgenden Matplotlib-Plots: Hintergrundfarbe, Tick-Farbe, Schriftgrössen, Linienbreiten, Legenden-Stile. Gilt für alle Charts des Notebooks. |
+| `.map()` | `pandas` | Ersetzt Werte einer Spalte anhand eines Dictionaries. Vektorisiert — kein Python-Loop. Hier: Segment-Name → Kapazitätswert aus `CAP_MAP`. |
+| `pd.Series()` | `pandas` | Erzeugt eine einspaltige Datenstruktur mit Index. Hier als Initialisierung mit Standardwert `'Andere'` vor der vektorisierten ET-Zuweisung. |
+### Zellen 3–5 — Chart 1: Wirtschaftlichkeit (4 Panels + Einzelplots + Langzeit)
+**Was passiert:** Ein 2×2-Panel-Chart wird erstellt. Alle Cashflow-Schleifen über `df_econ` nutzen jetzt `zip(df_econ['segment'], df_econ['capex'], df_econ['net_annual'])` statt `itertuples()`, und der Cashflow wird als NumPy-Vektoroperation berechnet: `-capex + net_annual * years` (kein List-Comprehension-Loop mehr).
+Panel 1: Kumulierte Cashflow-Kurven (symlog-Skala). Panel 2: ROI-Balken mit Ziel-ROI-Linie. Panel 3: Erlös/kWh. Panel 4: CAPEX vs. kumulierter Erlös.
 
-### Zelle 2
-**Was passiert:** Verifikation der geladenen Daten.
 
-### Zelle 3 — Chart 1: Wirtschaftlichkeit-Summary
-**Was passiert:** Ein 2×2-Grid aus vier Panels wird erstellt:
-- **Panel 1 (oben links):** Kumulierte Cashflow-Kurven für alle 4 Segmente über die 12-jährige Lebensdauer. Jede Kurve zeigt, wann (falls überhaupt) die Investition amortisiert ist.
-- **Panel 2 (oben rechts):** Balkendiagramm: ROI pro Jahr je Segment, mit einer gestrichelten Linie für den Ziel-ROI (8.3%/Jahr).
-- **Panel 3 (unten links):** Erlös pro kWh Kapazität — normiert auf die Grösse, damit die Segmente vergleichbar sind.
-- **Panel 4 (unten rechts):** CAPEX versus kumulierter Netto-Erlös als Doppelbalken.
+**Verwendete Bibliotheksobjekte & Funktionen (Erstnennung)**
 
-**Warum Symlog-Skala bei Panel 1?** Die CAPEX-Werte unterscheiden sich um Faktor 1000 (Privat: 4.000 EUR, Utility: 1.800.000 EUR). Eine normale Skala würde die kleinen Segmente nicht zeigen. Symlog ist eine "symmetrische logarithmische" Skala: linear nahe der Null (damit negative Werte korrekt dargestellt werden), logarithmisch für grosse Werte.
+| Funktion / Objekt | Library | Beschreibung |
+|---|---|---|
+| `np.arange()` | `numpy` | Erstellt ein Array mit gleichmässigem Abstand (Ganzzahlen). `np.arange(0, 13)` = [0,1,2,...,12]. Hier als Jahres-Achse für Cashflow-Kurven. NumPy-Alternative zu `range()`. |
+| `ax.set_yscale()` | `matplotlib.axes` | Setzt die Skalierung der Y-Achse. `'symlog'` = symmetrisch-logarithmisch: linear nahe der Null (für negative Werte), logarithmisch für grosse Beträge. `linthresh` definiert den linearen Bereich. |
+| `mticker.FuncFormatter()` | `matplotlib.ticker` | Definiert eine eigene Tick-Beschriftungsformel als Python-Funktion. Hier: Werte ≥ 1000 als `'123k'` statt `'123000'` anzeigen. |
+| `ax.annotate()` | `matplotlib.axes` | Fügt eine Beschriftung mit einem Pfeil an einen Datenpunkt an. `xy=` = Pfeilspitze, `xytext=` = Textposition. `arrowprops=` steuert Pfeilform und Farbe. |
+| `ax.axhline()` | `matplotlib.axes` | Zeichnet eine horizontale Linie über die gesamte Breite der Achse. Hier für die Break-Even-Linie bei y=0 und die Ziel-ROI-Referenzlinie. |
+| `ax.axvline()` | `matplotlib.axes` | Zeichnet eine vertikale Linie über die gesamte Höhe der Achse. Hier für den Marker bei Jahr 12 (Ende Simulationszeitraum). |
+### Zellen 6–7 — Chart 2: Heatmap Stunde × Monat
+**Was passiert:** Eine 24×12-Matrix (Stunden × Monate) wird als Heatmap dargestellt. Optimiert: statt zwei separater `pivot_table()`-Aufrufe ein kombinierter: `df_prices.pivot_table(..., aggfunc=['mean','std'])` — Pandas gruppiert nur einmal. `origin='lower'` setzt 00:00 unten (mathematische Konvention, nicht Bild-Konvention).
 
-### Zellen 4–8 — Charts 2–5
-**Was passiert (allgemeines Muster):** Jede dieser Zellen erstellt einen Chart mit demselben Grundgerüst:
-1. `fig, ax = plt.subplots(...)` — neues Bild und Achse erstellen
-2. `fig.patch.set_facecolor(BG_DARK)` — Hintergrundfarbe setzen (wird von rcParams manchmal überschrieben bei savefig)
-3. Daten aufbereiten und plotten
-4. Achsenbeschriftungen, Titel, Legende
-5. `plt.savefig(...)` — Chart als PNG speichern (in `output/charts/<szenario>/`)
-6. `plt.show()` — Chart im Notebook anzeigen
 
-**Chart 2:** Tagesprofil der Spotpreise — Durchschnittspreis pro Stunde (0–23 Uhr) als Flächen-Linienchart. Zeigt deutlich das Mittags-Solar-Tal und die Abend-Spitze.
+**Verwendete Bibliotheksobjekte & Funktionen (Erstnennung)**
 
-**Chart 3:** Saisonale Spread-Analyse — für jede Jahreszeit die Verteilung des täglichen Spreads als Violin-Plot. Ein Violin-Plot ist wie ein Boxplot, aber zeigt zusätzlich die Dichteverteilung der Werte.
+| Funktion / Objekt | Library | Beschreibung |
+|---|---|---|
+| `.pivot_table()` | `pandas` | Erstellt eine Kreuztabelle: `index`-Spalte als Zeilen, `columns`-Spalte als Spalten, `values` aggregiert mit `aggfunc`. Hier: Mittelwert des Preises pro Stunde × Monat. |
+| `ax.imshow()` | `matplotlib.axes` | Stellt eine Matrix als farbcodiertes Bild (Heatmap) dar. `cmap=` = Farbpalette, `origin='lower'` = Zeile 0 unten, `aspect='auto'` = Zellen füllen die Achse. |
+| `plt.colorbar()` | `matplotlib.pyplot` | Fügt eine Farblegende (Colorbar) neben dem Plot hinzu. Zeigt welcher Farbwert welchem Zahlenwert entspricht. |
+| `ax.axvspan()` | `matplotlib.axes` | Zeichnet eine farbige vertikale Zone (Rechteck über die volle Höhe). Hier für Lade- und Einspeisezeitfenster-Markierungen. |
+### Zellen 8–9 — Chart 3: Tagesprofil mit Doppelachse
+**Was passiert:** Netzlast (GW) und Preis (EUR/MWh) werden als Doppelachsen-Chart dargestellt. Die 4 günstigsten Stunden werden blau, die 4 teuersten rot hinterlegt.
 
-**Chart 4:** Netzentlastung — Balken für die drei Szenarien (2027/2030/2035), wie viel MW Spitzenlast entlastet werden.
 
-**Chart 5:** Spread-Zeitreihe — monatlicher Median-Spread von 2023 bis heute als Linienchart, mit farbigen Jahresbereichen.
+**Verwendete Bibliotheksobjekte & Funktionen (Erstnennung)**
 
-### Zellen 9–14 — Charts 6–8 und Abschlusskontrolle
-**Was passiert:** 
-**Chart 6:** Preisverteilung als Histogramm — alle Stundenpreise von 2023–heute. Zeigt, wie oft welche Preisbereiche vorkommen, inklusive negativer Preise.
+| Funktion / Objekt | Library | Beschreibung |
+|---|---|---|
+| `ax.twinx()` | `matplotlib.axes` | Erstellt eine zweite Y-Achse auf der rechten Seite, die dieselbe X-Achse teilt. Ermöglicht zwei verschiedene Skalen im selben Chart (hier: GW und EUR/MWh). |
+| `ax.fill_between()` | `matplotlib.axes` | Füllt die Fläche zwischen zwei Kurven (oder einer Kurve und der X-Achse) mit Farbe. Alpha-Wert steuert die Transparenz. |
+| `mpatches.Patch()` | `matplotlib.patches` | Erzeugt ein einfaches farbiges Rechteck für die Legende. Wird genutzt wenn kein echter Plot-Objekt für den Legenden-Eintrag vorhanden ist. |
+| `ax.get_legend_handles_labels()` | `matplotlib.axes` | Gibt die aktuellen Legenden-Einträge (Handles + Labels) einer Achse zurück. Wird genutzt um Legenden von mehreren Achsen zusammenzuführen. |
+### Zellen 10–13 — Charts 4 & 5: Szenarien & Saisonales Profil
+**Was passiert:** Chart 4: Netzentlastungsszenarien als Balken und Prozent-Reduktion mit dynamischer Einfärbung via `Normalize` und `cm.get_cmap()`. Chart 5: Saisonales Tagesprofil für alle 4 Jahreszeiten mit einheitlichen Y-Achsen (vorab berechnet) und farbigen Zeitfenstern.
 
-**Chart 7:** Dispatch-Übersicht — für ein Beispielwoche wird gezeigt, wann die Batterie lädt (blau), entlädt (rot), und was der Strompreis (orange) war.
 
-**Chart 8:** Wirtschaftlichkeit-Heatmap — eine Matrix: Segmente vs. Szenarien, Farbe = ROI.
+**Verwendete Bibliotheksobjekte & Funktionen (Erstnennung)**
 
-**Abschlusskontrolle:** Alle 8 PNG-Dateien werden auf Existenz geprüft.
+| Funktion / Objekt | Library | Beschreibung |
+|---|---|---|
+| `Normalize()` | `matplotlib.colors` | Skaliert Werte auf den Bereich [0,1] für Colormaps. `vmin`/`vmax` definieren den Eingabebereich. Wird mit `cm.get_cmap()` kombiniert um Farben datengesteuert zuzuweisen. |
+| `cm.get_cmap()` | `matplotlib.cm` | Lädt eine benannte Farbpalette als Objekt. `cmap(value)` gibt dann die RGBA-Farbe für einen Wert aus [0,1] zurück. |
+| `cm.ScalarMappable()` | `matplotlib.cm` | Verbindet eine Colormap mit einer Normalisierung — wird benötigt um eine Colorbar für Daten zu erzeugen, die nicht direkt via `imshow()`/`scatter()` geplottet wurden. |
+### Zelle 14 — Chart 5b: Monatlicher Spread
+**Was passiert:** Pro Monat: Intra-Tag-Spread (p75 − p25 der Stundenmittelwerte) und Negativpreis-Stunden. Gesamtchart + Einzelplots werden gespeichert.
 
 ---
-
 ## NB04 — Business Case (`04_Business_Case.ipynb`)
+Kein eigener Chart-Code. Lädt und zeigt die von NB03 erzeugten PNGs. Reiner Berichtsmodus.
 
-Dieses Notebook erzeugt keinen eigenen Code-Output — es ist ein lesbarer Bericht. Die Code-Zellen laden und zeigen nur die Charts, die NB03 bereits gespeichert hat.
+### Zelle 1 — Setup & show_chart()
+**Was passiert:** `config.json` laden, Charts-Verzeichnis definieren. Hilfsfunktion `show_chart()` rendert ein PNG direkt im Notebook. Szenariodaten aus NB02-CSV laden.
 
-### Zelle 1
-**Was passiert:** `config.json` laden, Pfad zum Charts-Verzeichnis definieren. Eine Hilfsfunktion `show_chart()` wird definiert: Sie lädt eine PNG-Datei und zeigt sie im Notebook an. Falls die Datei nicht existiert, gibt es eine lesbare Fehlermeldung statt eines kryptischen Fehlers.
 
-**Warum so:** NB04 ist für die Präsentation — jemand, der den Business Case liest, soll die Charts sehen, nicht den Code. `display(Image(...))` rendert ein Bild direkt im Notebook.
+**Verwendete Bibliotheksobjekte & Funktionen (Erstnennung)**
 
-### Zellen 2–13
-**Was passiert:** Jede Zelle ruft `show_chart('nb03_....png')` auf und zeigt einen der 8 Pflicht-Charts. Zwischen den Charts stehen Markdown-Zellen mit der Interpretation.
-
-### Zelle 14
-**Was passiert:** Eine Zusammenfassungstabelle der Wirtschaftlichkeitskennzahlen wird direkt aus `wirtschaftlichkeit.csv` geladen und als formatierte Tabelle angezeigt. Zusätzlich werden einige wichtige Schlussfolgerungen als Text berechnet und ausgegeben (z.B. "Kein Segment erreicht den Ziel-ROI durch Arbitrage allein").
+| Funktion / Objekt | Library | Beschreibung |
+|---|---|---|
+| `display()` | `IPython.display` | Gibt ein Objekt im Notebook-Output aus. Notwendig für `Image`-Objekte — normales `print()` würde nur den Objektpfad zeigen. |
+| `Image()` | `IPython.display` | Lädt ein Bild von der Festplatte und rendert es im Notebook-Output. `width=` setzt die Anzeigebreite in Pixeln. |
+### Zellen 2–13 — Chart-Anzeige
+**Was passiert:** `show_chart('nb03_....png')` aufrufen — lädt und zeigt jeden der 8 Pflicht-Charts. Zwischen den Charts stehen Markdown-Zellen mit Interpretation.
+### Zelle 14 — Zusammenfassung
+**Was passiert:** Wirtschaftlichkeitstabelle aus CSV laden, als formatierte Tabelle anzeigen. Schlussfolgerungen als Text ausgeben (z.B. kein Segment erreicht Ziel-ROI durch Arbitrage allein).
 
 ---
-
 ## NB05 — Business Strategy (`05_Business_Strategy.ipynb`)
-
-Das grösste Notebook: 27 Code-Zellen. Fasst alle Ergebnisse aus Pflicht und Kür zu einer Strategie-Empfehlung zusammen. Liest aus `transfer.json`, lädt Charts der Kür-Notebooks und zeigt sie mit Interpretation.
+Grösstes Notebook (27 Zellen). Fasst alle Ergebnisse aus Pflicht und Kür zu einer Strategie-Empfehlung zusammen.
 
 ### Zelle 1 — Setup
-**Was passiert:** Libraries und config.json laden. `transfer.json` komplett lesen — alle Werte, die NB01–NB15 dort hinterlegt haben, sind jetzt verfügbar. Verzeichnisse für Charts aller Kür-Notebooks werden definiert.
-
-### Zellen 2–26
-**Was passiert (Muster):** Jede Zelle behandelt einen Aspekt der Strategie:
-- Marktpotential: wie viele Batterien gibt es in der Schweiz? (aus transfer.json)
-- Revenue-Stack: welche Einnahmequellen gibt es neben Arbitrage? (FCR, aFRR, Eigenverbrauch)
-- Technologievergleich: Li-Ion vs. Redox-Flow vs. Schwungrad (aus NB11)
-- Räumliche Analyse: wo in der Schweiz ist das Potential am grössten? (aus NB06)
-- Fazit und Handlungsempfehlungen
-
+**Was passiert:** `transfer.json` komplett laden — alle Werte, die NB01–NB15 dort geschrieben haben, sind jetzt verfügbar. Charts-Verzeichnisse für alle Kür-Notebooks definieren.
+### Zellen 2–26 — Strategie-Kapitel
+**Was passiert:** Je eine Zelle pro Thema: Marktpotential, Revenue-Stack (FCR/aFRR/Eigenverbrauch), Technologievergleich, Räumliche Analyse, Cross-Border, Kostenentwicklung, Fazit. Jede Zelle lädt die relevanten Chart-PNGs der Kür-Notebooks und zeigt sie.
 ### Zelle 27 — Transfer-Output
-**Was passiert:** Alle Strategie-Schlüsselkennzahlen werden in `transfer.json` unter dem Schlüssel `strategie` gespeichert, für eventuelle weitere Notebooks.
+**Was passiert:** Strategie-Schlüsselkennzahlen in `transfer.json` unter `strategie` schreiben.
 
 ---
-
 ## NB06 — Räumliche Analyse (`06_Raeumliche_Analyse.ipynb`)
-
-Das komplexeste Kür-Notebook: 29 Zellen, GeoPandas, echte Geodaten der Schweiz. Ziel: Zeigen, in welchen Regionen der Schweiz Batteriespeicher den grössten Nutzen hätten.
+Komplexestes Kür-Notebook (29 Zellen). GeoPandas, echte Schweizer Geodaten, Kartenerzeugung, BVI-Index.
 
 ### Zelle 1 — Setup & Bibliotheken
-**Was passiert:** Mehrere spezielle Libraries werden bei Bedarf installiert: `geopandas` (Geodaten), `requests` (HTTP), `scipy` (wissenschaftliche Algorithmen), `shapely` (geometrische Berechnungen). Dann config.json laden und Farb-/Stil-Konstanten setzen. Pfade für Geodaten und Charts werden definiert.
+**Was passiert:** Fehlende Libraries werden bei Bedarf installiert: `geopandas`, `scipy`. Config laden, vollständiger Farb- und Stil-Ladeblock aus config.json. Verzeichnisse anlegen.
 
-**Warum GeoPandas?** GeoPandas ist wie Pandas, aber für räumliche Daten. Es kann Schweizer Kantonsgrenzen laden, Punkte auf einer Karte darstellen, und räumliche Operationen wie "Welche BFE-Anlage liegt in welchem Kanton?" ausführen.
 
-### Zellen 2–4 — Schweizer Geometrien laden
-**Was passiert:** Die Schweizer Kantonsgrenzen und Gemeindegrenzen werden von `swisstopo` (dem Schweizer Bundesamt für Landestopografie) heruntergeladen — als GeoPackage-Datei (`.gpkg`), ein standardisiertes Format für Geodaten. Falls die Datei bereits vorhanden ist, wird sie nicht nochmal heruntergeladen.
+**Verwendete Bibliotheksobjekte & Funktionen (Erstnennung)**
 
-**Warum nicht einfach ein Bild der Schweiz?** Weil wir Datenpunkte (Kraftwerksstandorte, Kantonsgrenzen) auf der Karte platzieren wollen. Dafür brauchen wir echte Koordinaten — die GeoPackage-Datei gibt uns Polygone der Kantonsgrenzen als Koordinaten.
+| Funktion / Objekt | Library | Beschreibung |
+|---|---|---|
+| `gpd.read_file()` | `geopandas` | Lädt Geodaten aus Dateiformaten wie GeoPackage (`.gpkg`), Shapefile (`.shp`) oder GeoJSON. `layer=` wählt einen Layer in GPKG. Gibt einen GeoDataFrame zurück. |
+| `gpd.list_layers()` | `geopandas` | Listet alle Layer in einer GeoPackage-Datei auf. Notwendig weil GPKG mehrere Geometrie-Typen enthalten kann. |
+| `gpd.GeoDataFrame()` | `geopandas` | Erstellt einen GeoDataFrame (ein pandas DataFrame mit einer Geometry-Spalte). Hier z.B. um einzelne Geometrien für das Plotten vorzubereiten. |
+### Zelle 2 — BFE-Anlagen laden
+**Was passiert:** Das BFE-GeoPackage (alle Schweizer Elektrizitätsproduktionsanlagen) wird von der swisstopo-API heruntergeladen (falls nicht vorhanden). Stream-Download in 512KB-Chunks. Koordinaten werden von CH1903+ (Schweizer Landeskoordinaten) auf WGS84 (Längen-/Breitengrad) transformiert.
 
-### Zellen 5–8 — BFE-Daten laden
-**Was passiert:** Das Bundesamt für Energie (BFE) stellt eine Datenbank aller Schweizer Elektrizitätsproduktionsanlagen bereit. Diese wird heruntergeladen und gefiltert: Nur Batteriespeicher und relevante Anlagen. Die Koordinaten werden in das Standard-Koordinatensystem (WGS84 = Längen-/Breitengrad) umgerechnet, da Schweizer Daten im nationalen CH1903+-System gespeichert sind.
 
-**Was ist ein Koordinatensystem?** Die Schweiz hat ihr eigenes System mit Koordinaten wie (2600000, 1200000) — das sind Meter vom nationalen Referenzpunkt. Google Maps kennt nur Längengrad/Breitengrad. Die Umrechnung macht `pyproj` im Hintergrund von GeoPandas.
+**Verwendete Bibliotheksobjekte & Funktionen (Erstnennung)**
 
-### Zellen 9–14 — Bevölkerungsdaten
-**Was passiert:** Die BFS (Bundesamt für Statistik) STATPOP-Daten werden via PXWeb-API geladen — Bevölkerungszahlen pro Kanton und Gemeinde für 2023. Diese werden mit den Geodaten verknüpft: Jeder Kanton bekommt seine Einwohnerzahl.
+| Funktion / Objekt | Library | Beschreibung |
+|---|---|---|
+| `.iter_content()` | `requests` | Lädt eine HTTP-Antwort in Chunks (Stücken) statt auf einmal. Notwendig für grosse Dateien: verhindert Speicher-Überlauf. `chunk_size=1024*512` = 512KB pro Chunk. |
+| `.to_crs()` | `geopandas` | Transformiert ein GeoDataFrame in ein anderes Koordinatensystem (CRS). `epsg=4326` = WGS84 (GPS-Koordinaten). Notwendig weil Schweizer Daten im nationalen CH1903+-System vorliegen. |
+### Zelle 4 — Energieträger-Mapping (vektorisiert)
+**Was passiert:** Jede Anlage bekommt einen Energieträger-Label basierend auf den BFE-Subcategory-Codes. Vektorisierte Implementierung: erst `.map(SUBCAT_MAP)` auf die SubCategory-Spalte, dann für nicht zugeordnete Einträge `.map(MAINCAT_MAP)` auf die MainCategory, Rest → `'Andere'`. Kein `apply(axis=1)` über 300'000+ Zeilen mehr.
 
-**Warum Bevölkerungsdaten?** Weil das Potential für Heimspeicher proportional zur Bevölkerung ist: Mehr Menschen = mehr potenzielle Heimspeicher.
 
-### Zellen 15–22 — BVI-Index berechnen
-**Was passiert:** Der "Batterie-Verwertbarkeits-Index" (BVI) wird für jede Region berechnet. Er kombiniert drei Faktoren (mit Gewichten aus config.json):
-- **Netzimbalance** (Gewicht 50%): Wie oft ist die Region überlastet?
-- **Engpassnähe** (Gewicht 30%): Wie nah ist sie an bekannten Netzengpässen?
-- **Saisonal** (Gewicht 20%): Wie stark schwankt der lokale Verbrauch saisonal?
+**Verwendete Bibliotheksobjekte & Funktionen (Erstnennung)**
 
-Jeder Faktor wird auf 0-100 normiert, dann gewichtet summiert.
+| Funktion / Objekt | Library | Beschreibung |
+|---|---|---|
+| `pd.to_numeric()` | `pandas` | Konvertiert eine Spalte zu numerischen Werten. `errors='coerce'` verwandelt nicht-konvertierbare Werte (Strings, None) in `NaN` statt eine Exception zu werfen. |
+| `.str.strip()` | `pandas (.str)` | Entfernt führende und nachfolgende Leerzeichen (inkl. non-breaking spaces) aus String-Spalten. `.str.lower()` konvertiert zu Kleinbuchstaben. |
+| `.fillna()` | `pandas` | Ersetzt NaN-Werte durch einen Standardwert oder aus einer anderen Serie. Hier: falls SubCategory-Mapping kein Ergebnis liefert, MainCategory-Mapping versuchen. |
+### Zelle 5–6 — BFS Bevölkerungsdaten
+**Was passiert:** Die BFS STATPOP-Daten (Einwohner pro Kanton) werden via PXWeb-API abgerufen. POST-Request mit JSON-Query, Antwort als CSV-Stream. Non-breaking Spaces und Apostrophe als Tausendertrennzeichen werden bereinigt.
 
-**Warum ein zusammengesetzter Index?** Kein einzelner Wert sagt alles. Eine Region kann viel Solarenergie produzieren (gut für Batterien), aber gleichzeitig gute Netzanschlüsse haben (weniger Engpassnutzen). Der Index kombiniert alle relevanten Faktoren.
 
-### Zellen 23–29 — Karten erstellen
-**Was passiert:** Für jede Analyse wird eine Schweizer Karte erstellt:
-- Karte 1: Bevölkerungsdichte pro Kanton (Choropleth-Karte — eingefärbte Flächen)
-- Karte 2: Bekannte Netzengpässe und BVI-Index
-- Karte 3: Standorte bestehender Batteriespeicher
-- Karte 4: Kombinierte Empfehlungskarte
+**Verwendete Bibliotheksobjekte & Funktionen (Erstnennung)**
 
-**Was ist eine Choropleth-Karte?** Eine thematische Karte, bei der Gebiete nach einem Wert eingefärbt werden (ähnlich wie politische Karten, die Länder nach BIP einfärben).
+| Funktion / Objekt | Library | Beschreibung |
+|---|---|---|
+| `requests.post()` | `requests` | Sendet einen HTTP POST-Request mit JSON-Body. Hier für die PXWeb-API: die Abfrage-Parameter (Kanton, Jahr) werden als JSON-Dictionary gesendet. |
+| `requests.head()` | `requests` | Sendet nur den HTTP-Header (kein Body). Schneller Verbindungstest: Ist der Server erreichbar? |
+| `.raise_for_status()` | `requests` | Wirft eine `HTTPError`-Exception wenn der HTTP-Statuscode einen Fehler anzeigt (4xx/5xx). Verhindert stilles Scheitern bei API-Fehlern. |
+| `io.StringIO()` | `io` | Erstellt einen In-Memory-Textpuffer. `pd.read_csv(io.StringIO(text))` liest CSV direkt aus einem String — kein temporäres Schreiben auf die Festplatte nötig. |
+| `pd.isna()` | `pandas` | Prüft elementweise ob Werte NaN/None/NaT sind. Gibt eine Boolean-Serie zurück. Gegenteil: `pd.notna()`. |
+### Zelle 8 — Zonenzuweisung (vektorisiert)
+**Was passiert:** Jede Anlage wird einer von 5 Netzregionen (Nord, Mitte, West, Süd, Ost) zugewiesen — primär per Kanton-Dict-Mapping. Fallback (wenn kein Kanton vorhanden): geografische Zuweisung via `np.select()` auf Koordinaten statt Python-`apply()`.
+
+
+**Verwendete Bibliotheksobjekte & Funktionen (Erstnennung)**
+
+| Funktion / Objekt | Library | Beschreibung |
+|---|---|---|
+| `np.select()` | `numpy` | Wählt aus mehreren Arrays basierend auf einer Liste von Bedingungen. `condlist=[cond1, cond2, ...]`, `choicelist=[val1, val2, ...]`, `default=`. Vektorisierte Alternative zu if/elif-Ketten in Python-Loops. |
+### Zellen 9–11 — Kapazitätsfaktoren, Zonenbilanzen, BVI
+**Was passiert:** Installierte Kapazität × Kapazitätsfaktor (je Energieträger) = mittlere Einspeisung pro Zone. Zonenimbalance = Produktion − Verbrauch. BVI-Index = Imbalance × Engpass-Multiplikator, normiert auf 10.
+
+
+**Verwendete Bibliotheksobjekte & Funktionen (Erstnennung)**
+
+| Funktion / Objekt | Library | Beschreibung |
+|---|---|---|
+| `np.abs()` | `numpy` | Betrag (absoluter Wert) eines Arrays. Hier für die BVI-Berechnung: Vorzeichen der Imbalance ist egal, nur die Grösse zählt. |
+### Zellen 13–19 — Kartenerzeugung
+**Was passiert:** Schweizer Kantonsgrenzen von swisstopo laden. Mehrere Karten erstellen: Bevölkerungsdichte (Choropleth), Kraftwerksstandorte (Scatter mit Grössenskalierung), Kombinierte Karte mit Engpasskorridoren. Scatter-Plots für 300k+ Solar-Anlagen: Stichprobe + `rasterized=True` für schnelles Rendering.
+
+
+**Verwendete Bibliotheksobjekte & Funktionen (Erstnennung)**
+
+| Funktion / Objekt | Library | Beschreibung |
+|---|---|---|
+| `np.column_stack()` | `numpy` | Stapelt Arrays als Spalten zu einer 2D-Matrix. `np.column_stack([x, y])` erzeugt ein (n,2)-Array aus X- und Y-Koordinaten — effizienter als `list(zip(x,y))` für grosse Arrays. |
+| `np.percentile()` | `numpy` | Berechnet ein Quantil (Perzentil) eines Arrays. `np.percentile(kw, 95)` = der 95%-Quantil-Wert. Hier für robuste Grössenskalierung von Kraftwerks-Punkten. |
+| `np.clip()` | `numpy` | Begrenzt Array-Werte auf [min, max]. Hier für Punkt-Grössenberechnung: zu kleine Kraftwerke erhalten Mindestgrösse, zu grosse werden gekappt. |
+| `.geometry.x` | `geopandas` | Extrahiert die X-Koordinate (Längengrad) aus der Geometry-Spalte als pandas Series. `.to_numpy()` konvertiert zu NumPy für schnelle scatter-Plots. |
+| `.geometry.centroid` | `geopandas` | Berechnet den geometrischen Schwerpunkt einer Geometrie (Polygon). Wird für Kanton-Beschriftungen verwendet. |
+| `.sample()` | `pandas` | Zieht eine zufällige Stichprobe. `n=` Anzahl Zeilen, `random_state=42` für Reproduzierbarkeit. Hier: 160k der 320k Solar-Anlagen für schnelleres Rendering. |
+| `ax.set_axis_off()` | `matplotlib.axes` | Blendet alle Achsenelemente aus (Rahmen, Ticks, Labels). Standard für Karten: keine Koordinatenachsen erwünscht. |
+| `rasterized=True` | `matplotlib` | Parameter für `scatter()` und `plot()`. Wandelt viele kleine Punkte in ein Pixel-Bild um statt in Vektoren. Entscheidend für Performance bei 100k+ Punkten. |
+| `mcolors.TwoSlopeNorm()` | `matplotlib.colors` | Normalisierung mit zwei Slopes: unter `vcenter` linear auf [vmin, vcenter], über `vcenter` linear auf [vcenter, vmax]. Für divergente Colormaps (z.B. Rot=Defizit, Blau=Überschuss). |
+| `cKDTree()` | `scipy.spatial` | k-d-Baum-Datenstruktur für schnelle räumliche Nachbarschaftssuche. Nach einmaliger Konstruktion: Nächste-Nachbarn-Anfragen in O(log n) statt O(n). Hier für Kraftwerks-Zuweisung zu Netzregionen. |
+### Zellen 20–21 — Lastprofile & Heatmaps
+**Was passiert:** Synthetische stündliche Last- und Produktionsprofile je Zone werden mit Gauss-Kurven (`np.exp()`) modelliert. Produktions-Mix-Heatmap: welche Energieträger produzieren wann wie viel?
+
+
+**Verwendete Bibliotheksobjekte & Funktionen (Erstnennung)**
+
+| Funktion / Objekt | Library | Beschreibung |
+|---|---|---|
+| `np.exp()` | `numpy` | Berechnet e^x für jedes Array-Element. Wird für Gauss-Kurven verwendet: `np.exp(-((hours-peak)**2)/width)` ergibt eine Glockenkurve. Hier für realistische Tagesprofile. |
+| `np.sin()` | `numpy` | Sinusfunktion (im Bogenmass). Hier für das Solar-Tagesprofil: sin-Kurve zwischen Sonnenaufgang (Stunde 6) und Sonnenuntergang (Stunde 19). |
+| `np.ones()` | `numpy` | Erstellt ein Array mit lauter Einsen. Hier für das Kernkraft-Lastprofil: konstante Baseload, unabhängig von der Tageszeit. |
+| `np.full()` | `numpy` | Erstellt ein Array gefüllt mit einem konstanten Wert. Hier für Kernkraft-Profil: `np.full(24, inst * 0.90)` = 24 Stunden mit 90% Auslastung. |
+### Zellen 22 — Tagesverlauf-Animation
+**Was passiert:** Eine animierte GIF zeigt den stündlichen Verbrauch vs. Produktion pro Netzzone (0–23 Uhr). `blit=False` weil die Bar-Farben sich ändern (blit=True würde nur bestimmte Artists neu zeichnen).
+
+
+**Verwendete Bibliotheksobjekte & Funktionen (Erstnennung)**
+
+| Funktion / Objekt | Library | Beschreibung |
+|---|---|---|
+| `FuncAnimation()` | `matplotlib.animation` | Erstellt eine Animation durch wiederholten Aufruf einer Update-Funktion `func(frame)`. `frames=` = Liste der Frame-Parameter (hier: Stunden 0–23), `interval=` = Pause zwischen Frames in ms, `blit=` = Optimierung. |
+| `PillowWriter()` | `matplotlib.animation` | Speichert eine Animation als GIF-Datei via Pillow. `fps=` = Frames pro Sekunde. Einfachste Option ohne externe Abhängigkeiten (ffmpeg etc.). |
+| `.save()` | `FuncAnimation` | Rendert alle Frames und speichert als Datei. Hier: `.save(path, writer=PillowWriter(fps=3))` |
+### Zellen 23–29 — BVI-Charts & Saisonale Analyse
+**Was passiert:** BVI-gewichtete vs. naive Rollout-Szenarien als gestapelte Balken. Saisonale Kapazitätsfaktoren je Energieträger und Zone. Heatmap: BVI-Index nach Zone × Saison.
 
 ---
-
 ## NB07 — Cross-Border-Analyse (`07_Cross_Border.ipynb`)
+Analysiert Stromflüsse zwischen der Schweiz und DE/AT/IT/FR und deren Einfluss auf Spotpreise.
 
-Analysiert die Stromflüsse zwischen der Schweiz und ihren Nachbarn (DE, AT, IT, FR) und ob diese eine Rolle für die Arbitrage-Strategie spielen.
+### Zelle 1–2 — Setup & Grenzfluss-Download
+**Was passiert:** Standard-Setup. ENTSO-E API wird für Grenzflüsse abgerufen: `query_crossborder_flows(from_country, to_country, ...)` für alle 4 Grenzpaare, jahresweise mit Retry. Ergebnis: Import/Export in MW pro Stunde.
 
-### Zelle 1 — Setup & Grenzfluss-Download
-**Was passiert:** Neben dem üblichen Setup wird die ENTSO-E-API für Grenzfluss-Daten (physikalische Stromflüsse über Grenzkuppelleitungen) abgerufen. Für jede Grenze (CH-DE, CH-AT, etc.) werden Import- und Exportdaten jahresweise heruntergeladen.
 
-**Warum Grenzflüsse?** Die Schweiz ist ein wichtiges Durchgangsland für europäischen Strom. Wenn grosse Mengen Strom von Deutschland nach Italien fliessen (z.B. bei viel Solarenergie in DE), drückt das den Schweizer Spotpreis. Diese Korrelation zu verstehen hilft, bessere Dispatch-Strategien zu entwickeln.
+**Verwendete Bibliotheksobjekte & Funktionen (Erstnennung)**
 
-### Zellen 2–4 — Analyse
-**Was passiert:** Nettoimport/-export pro Monat und Saison wird berechnet. Korrelation zwischen Grenzflüssen und Spotpreis wird analysiert. Ein Streudiagramm zeigt: Mehr Import aus Deutschland → tiefere Schweizer Preise?
+| Funktion / Objekt | Library | Beschreibung |
+|---|---|---|
+| `.query_crossborder_flows()` | `entsoe` | Lädt die physikalischen Grenzflüsse (in MW) zwischen zwei Regelzonen. Positiv = Export, negativ = Import. Datenbasis für die Cross-Border-Korrelationsanalyse. |
+### Zellen 3–6 — Analyse & Charts
+**Was passiert:** Netto-Import/-Export pro Saison berechnen. Korrelation zwischen Grenzflüssen und Spotpreis analysieren. Streudiagramme zeigen: Mehr Import aus DE → tiefere CH-Preise?
 
-### Zellen 5–7 — Charts und Transfer
-**Was passiert:** Grenzfluss-Charts werden erstellt und gespeichert. Schlüsselkennzahlen (z.B. "CH war 2024 netto Stromexporteur mit X TWh") werden in transfer.json geschrieben.
+
+**Verwendete Bibliotheksobjekte & Funktionen (Erstnennung)**
+
+| Funktion / Objekt | Library | Beschreibung |
+|---|---|---|
+| `.corr()` | `pandas` | Berechnet die Pearson-Korrelationskoeffizienten zwischen allen Spaltenpaaren eines DataFrames. Wert nahe +1/-1 = starke lineare Abhängigkeit, nahe 0 = kein linearer Zusammenhang. |
+| `.dropna()` | `pandas` | Entfernt Zeilen (oder Spalten) die NaN-Werte enthalten. Wichtig vor Korrelationsberechnungen: `corr()` ignoriert NaN, aber `merge()` kann NaN-Zeilen erzeugen. |
 
 ---
-
 ## NB08 — Marktdynamik (`08_Marktdynamik.ipynb`)
+Untersucht Spread-Trend über Zeit und CAPEX-Lernkurven für die Wirtschaftlichkeitsprojektion.
 
-Untersucht, wie sich der Arbitrage-Spread über die Zeit verändert hat und wie er sich entwickeln könnte — und wie sinkende CAPEX-Kosten die Wirtschaftlichkeit verbessern.
+### Zellen 1–3 — Spread-Trend
+**Was passiert:** Historische Spread-Zeitreihe auf Trend analysieren. Lineare Regression via `np.polyfit()`, Trendlinie via `np.polyval()`. Berechnung: ab welchem Spread-Niveau ist Privatarbitrage Break-Even?
 
-### Zelle 1 — Setup
-**Was passiert:** Zusätzliche Parameter aus dem Kür-Abschnitt der config.json geladen: Spread-Break-Even-Wert (unter welchem Spread ist Arbitrage nicht mehr wirtschaftlich?), CAPEX-Lernrate (jährliche Kostensenkung durch Skaleneffekte).
 
-### Zellen 2–3 — Spread-Trend
-**Was passiert:** Die historische Spread-Zeitreihe aus `spread_zeitreihe.csv` wird auf einen Trend analysiert. Eine lineare Regression wird berechnet: Steigt oder sinkt der Spread über die Zeit? Bei welchem Spread wäre Privatarbitrage Break-Even?
+**Verwendete Bibliotheksobjekte & Funktionen (Erstnennung)**
 
-**Warum Regression?** Weil man aus historischen Daten eine Tendenz ableiten will. `numpy.polyfit` berechnet die beste Gerade durch die Monatspunkte.
-
+| Funktion / Objekt | Library | Beschreibung |
+|---|---|---|
+| `np.polyfit()` | `numpy` | Berechnet die Koeffizienten eines Polynoms, das am besten durch die Datenpunkte passt (Kleinste-Quadrate-Regression). Für Grad 1: liefert [Steigung, Achsenabschnitt] einer Geraden. |
+| `np.polyval()` | `numpy` | Wertet ein Polynom (definiert durch Koeffizienten von `polyfit`) an gegebenen X-Werten aus. Liefert die Y-Werte der Regressionsgerade. |
+| `LinearSegmentedColormap` | `matplotlib.colors` | Definiert eine eigene Farbpalette durch lineare Interpolation zwischen definierten Farb-Stützpunkten. Hier für benutzerdefinierte Gradient-Visualisierungen. |
 ### Zellen 4–6 — CAPEX-Lernkurve
-**Was passiert:** Die erwartete Preisentwicklung für Batterien wird modelliert. CAPEX sinkt jährlich um die Lernrate (z.B. 10%). Es wird berechnet, in welchem Jahr die Privatarbitrage Break-Even erreicht — basierend auf sinkenden Kosten, nicht steigendem Spread.
-
-**Was ist eine Lernkurve?** In der Industrie gilt: Wenn sich die Produktionsmenge verdoppelt, sinken die Stückkosten um einen festen Prozentsatz (historisch ~15-20% bei Batterien). Das ist der Grund, warum Tesla-Batterien heute zehnmal günstiger sind als 2010.
+**Was passiert:** CAPEX-Preisentwicklung wird modelliert: jährliche Kostensenkung um die Lernrate (config: 10%). Berechnung in welchem Jahr die Privatarbitrage Break-Even erreicht.
 
 ---
-
 ## NB08a — Animationen (`08a_Animationen.ipynb`)
+Erstellt animierte GIFs der Preis- und Lastzeitreihen über 52 Kalenderwochen.
 
-Erstellt animierte GIFs der wichtigsten Zeitreihen.
+### Zellen 1–3 — Setup & Wochenaggregation
+**Was passiert:** Standard-Setup. Preise und Last werden pro Kalenderwoche × Stunde aggregiert: Mittelwert, p25, p75. Optimiert: `wh_price = df_prices.groupby(['week','hour']).agg(mean=..., p25=lambda: quantile(0.25), p75=lambda: quantile(0.75))`. `dt.isocalendar().week` liefert ISO-Kalenderwochen (1–52).
 
-### Zelle 1 — Setup
-**Was passiert:** Zusätzlich zu den Standard-Libraries wird `matplotlib.animation` importiert — das Modul für animierte Charts. `PillowWriter` erlaubt das Exportieren als GIF.
 
-### Zellen 2–4 — Preis-Animation
-**Was passiert:** Eine Animation wird erstellt, die den Spot-Preis über das Jahr "abrollt" — wie ein Ticker. Für jeden Monat wird ein Frame gerendert, alle Frames werden zu einem GIF zusammengefügt.
+**Verwendete Bibliotheksobjekte & Funktionen (Erstnennung)**
 
-**Warum GIF und nicht Video?** GIFs laufen ohne Video-Player direkt im Browser und in Präsentationen. Für wissenschaftliche Dokumentation sind sie einfacher einzubetten.
+| Funktion / Objekt | Library | Beschreibung |
+|---|---|---|
+| `.dt.isocalendar()` | `pandas (.dt)` | Gibt ein DataFrame mit ISO-Kalenderwoche (`week`), Wochentag und Jahr zurück. ISO-KW beginnt montags, KW1 enthält den ersten Donnerstag des Jahres. |
+### Zellen 5–6 — Animationen A & B: Preiskerzen + Netzlast
+**Was passiert:** 4 GIFs (je eine pro Tageszeit 00/07/12/19 Uhr): 52 Frames, eine pro Kalenderwoche. Pre-Indexierung VOR der Animations-Schleife: `_price_by_hour[stunde] = wh_price[wh_price['hour']==stunde].set_index('week')`. In `update_a()` dann O(1)-Lookup statt Boolean-Filter über den gesamten DataFrame. Animations-B: 4-Panel-Chart alle Tageszeiten gleichzeitig, gleiche Pre-Index-Strategie für `update_b()`.
 
-**Technisches Detail:** `FuncAnimation(fig, update_func, frames=n)` ruft `update_func(frame_nr)` für jeden Frame auf. Diese Funktion ändert die Datenmenge, die der Chart zeigt. Dann wird alles als GIF gespeichert.
 
-### Zellen 5–8 — Weitere Animationen
-**Was passiert:** Analog: Animationen für Spread-Entwicklung, saisonale Preisverteilung, Dispatch-Simulation einer Beispielwoche.
+**Verwendete Bibliotheksobjekte & Funktionen (Erstnennung)**
+
+| Funktion / Objekt | Library | Beschreibung |
+|---|---|---|
+| `.join()` | `pandas` | Verknüpft zwei DataFrames per Index (schneller als `merge()` wenn der Join-Key der Index ist). Hier für Quantil-Tabellen aus `groupby().quantile().unstack()`. |
+| `ax.errorbar()` | `matplotlib.axes` | Zeichnet Datenpunkte mit Fehlerbalken. `yerr=[[unten],[oben]]` für asymmetrische Balken. Hier für Preiskerzen: Mittelpunkt = Mittelwert, Balken = p25/p75-Bereich. |
+| `.set_data()` | `matplotlib.lines.Line2D` | Aktualisiert die X- und Y-Daten einer bestehenden Linie. Effizienter als eine neue Linie zu erstellen — der Artist bleibt bestehen, nur die Daten ändern sich. |
+| `.set_height()` | `matplotlib.patches.Rectangle` | Ändert die Höhe eines Balken-Patches zur Laufzeit. Wird in Animationen verwendet um Balkendiagramme frame-by-frame zu aktualisieren. |
+### Zelle 7 — Animation C: Spread-Animation (optimiert)
+**Was passiert:** Wöchentlicher Spread (p75 − p25), Negativpreis-Anteil und Dispatch-Stunden werden als aufbauende Kurven animiert. Optimierungen: `week_spread` via `.quantile([]).unstack().join()` statt Lambda-agg; Tages-Quantile via einmaligem `groupby.quantile().unstack()` + `.join()` statt zwei `transform(lambda)`-Aufrufen. `week_spread_idx = week_spread.set_index('week')` für O(1)-Lookup in `update_c()`.
 
 ---
-
 ## NB09 — Revenue Stacking (`09_Revenue_Stacking.ipynb`)
+Berechnet Mehrertrag durch Systemdienstleistungen (FCR/aFRR) zusätzlich zur Arbitrage.
 
-Berechnet, wie viel Mehrertrag möglich wäre, wenn die Batterie nicht nur Arbitrage macht, sondern auch Systemdienstleistungen erbringt (Frequenzhaltung, Regelenergie).
+### Zellen 1–3 — Setup & Erlösstacking-Modell
+**Was passiert:** Literaturbasierte Schätzwerte für FCR- und aFRR-Erlöse (EUR/kWh/Jahr) werden definiert. Für jedes Segment und jeden Erlöstyp wird berechnet, wie viel Mehrertrag bei 20% reservierter FCR-Kapazität möglich wäre.
 
-### Zellen 1–2 — Setup & Marktpreise laden
-**Was passiert:** Neben config.json werden historische Preise für FCR (Frequency Containment Reserve — bezahlte Bereitschaft, die Frequenz zu stabilisieren) und aFRR (automatische Frequenzwiederherstellung) geladen. Diese Preise kommen aus öffentlichen Quellen (Swissgrid, ENTSO-E).
 
-**Was ist FCR?** Wenn ein grosses Kraftwerk plötzlich ausfällt, muss die Netzfrequenz (50 Hz) innerhalb von 30 Sekunden stabilisiert werden. Batterien sind ideal dafür: Sie können in Millisekunden reagieren. Netzbetreiber bezahlen für die blosse Bereitschaft dazu — auch wenn die Batterie nicht eingesetzt wird.
+**Verwendete Bibliotheksobjekte & Funktionen (Erstnennung)**
 
-### Zellen 3–5 — Berechnung & Transfer
-**Was passiert:** Für jedes Segment wird berechnet, wie viel zusätzlicher Erlös durch FCR und aFRR möglich wäre, wenn 20% der Kapazität dafür reserviert werden. Das wird mit dem reinen Arbitrage-Erlös verglichen. Ergebnis in `transfer.json`.
+| Funktion / Objekt | Library | Beschreibung |
+|---|---|---|
+| `ax.barh()` | `matplotlib.axes` | Horizontales Balkendiagramm. Praktisch wenn Kategorien-Labels lang sind (horizontal lesbar statt rotiert). `y=` = Kategorienachse, `width=` = Werte. |
+### Zellen 4–5 — Charts
+**Was passiert:** Gestapelter Balkendiagramm: Arbitrage-Erlös als Basis, FCR und aFRR als Aufstockung. Break-Even-Analyse: ab wann macht FCR die Investition rentabel?
 
 ---
-
 ## NB10 — Dispatch-Optimierung (`10_Dispatch_Optimierung.ipynb`)
+Vergleicht reaktiven (NB02-Schwellenwert) mit day-ahead-optimalem Dispatch.
 
-Vergleicht den einfachen reaktiven Dispatch (NB02: Schwellenwertmodell) mit einem Day-Ahead-optimalen Dispatch (als ob man die morgigen Preise perfekt kennen würde).
+### Zellen 1–2 — Oracle-Dispatch
+**Was passiert:** Der 'perfekte' Dispatch wird simuliert: Er kennt alle Preise des Tages im Voraus und lädt/entlädt optimal. `np.where(p <= q25)` findet alle Lade-Stunden als Array von Indices statt eines Python-Loops.
 
-### Zellen 1–2 — Setup & Optimaler Dispatch
-**Was passiert:** Der "Oracle"-Dispatch wird simuliert: Er kennt alle Preise eines Tages im Voraus und lädt/entlädt perfekt optimal. Das ist die theoretische Obergrenze — in der Realität unmöglich, aber nützlich als Vergleichsgrösse.
 
-**Warum vergleichen?** Das zeigt die "Effizienzlücke": Wie viel lässt man auf dem Tisch liegen, weil man nicht in die Zukunft sehen kann? Wenn der reaktive Dispatch 80% des optimalen erreicht, ist er gut. Wenn nur 40%, lohnt es sich, bessere Prognosen zu entwickeln.
+**Verwendete Bibliotheksobjekte & Funktionen (Erstnennung)**
 
-### Zellen 3–7 — Analyse & Charts
-**Was passiert:** Beide Dispatch-Strategien werden für alle Segmente verglichen: Erlös, Anzahl Lade-/Entlade-Zyklen, Effizienz. Charts zeigen die Unterschiede. Ergebnisse in `transfer.json`.
+| Funktion / Objekt | Library | Beschreibung |
+|---|---|---|
+| `np.where()` | `numpy` | Gibt Indices (oder Werte) zurück wo eine Bedingung erfüllt ist. `np.where(p <= q25)` = alle Positionen wo der Preis im Lade-Quantil liegt. Vectorized Alternative zu `[i for i,v in enumerate(p) if v <= q25]`. |
+### Zellen 3–7 — Vergleich & Sensitivitätsanalyse
+**Was passiert:** Reaktiv vs. Oracle für alle Segmente: Erlös, Zyklen, Effizienz. Sensitivitätsanalyse: wie verändert sich der Jahreserlös wenn die C-Rate (Leistung/Kapazität) variiert?
 
 ---
-
 ## NB11 — Technologievergleich (`11_Technologievergleich.ipynb`)
+Vergleicht Li-Ion mit Redox-Flow, Vanadium-Flow, CAES, Schwungrad — Kosten, Lebensdauer, Wirkungsgrad.
 
-Vergleicht Lithium-Ionen-Batterien mit alternativen Speichertechnologien.
+### Zellen 1–2 — Technologiedaten laden
+**Was passiert:** Kosten- und Leistungsdaten werden aus einer lokalen CSV geladen oder von der NREL Annual Technology Baseline API (öffentliche AWS S3 CSV). HTTP GET → Text-Response → `pd.read_csv(io.StringIO(resp.text))`.
 
-### Zellen 1–2 — Setup & Technologiedaten
-**Was passiert:** Technologieparameter werden geladen — entweder aus einer lokalen CSV (manuell zusammengestellt) oder aus der NREL Annual Technology Baseline (ATB), einer US-amerikanischen öffentlichen Datenbank mit Kostenprojektionen für Energietechnologien auf AWS S3 gespeichert.
 
-**Technologien:** Li-Ion (Standard), Redox-Flow (längere Lebensdauer, tiefere Energiedichte), Vanadium-Flow (sehr langlebig, teuer), Compressed Air (gross, billig), Schwungrad (sehr schnell, wenig Kapazität).
+**Verwendete Bibliotheksobjekte & Funktionen (Erstnennung)**
 
-### Zellen 3–6 — Vergleich & Charts
-**Was passiert:** Für jede Technologie werden dieselben Wirtschaftlichkeitskennzahlen wie in NB02 berechnet, dann nebeneinander verglichen. Ein Radar-Chart (Spinnennetz) zeigt alle Dimensionen gleichzeitig: Kosten, Lebensdauer, Wirkungsgrad, Leistungsdichte, Skalierbarkeit.
+| Funktion / Objekt | Library | Beschreibung |
+|---|---|---|
+| `np.log()` | `numpy` | Natürlicher Logarithmus (Basis e). Für Lernkurven-Regression: `CAPEX = a × Cumulative_GWh^(-b)` wird durch Logarithmieren linearisiert. |
+| `np.linspace()` | `numpy` | Erstellt n gleichmässig verteilte Werte in [start, stop]. Im Unterschied zu `arange()`: garantiert genau n Punkte inkl. Endpunkt. Hier für glatte Kurven-Plots. |
+| `curve_fit()` | `scipy.optimize` | Passt eine benutzerdefinierte Funktion `f(x, *params)` an Datenpunkte an (nichtlineare Kleinste-Quadrate). Gibt optimale Parameter und Kovarianzmatrix zurück. |
+### Zellen 3–6 — Vergleich & Radar-Chart
+**Was passiert:** Wirtschaftlichkeit für alle Technologien berechnen. Radar-Chart (Spinnennetz) mit 5 Dimensionen: Kosten, Lebensdauer, Wirkungsgrad, Energiedichte, Skalierbarkeit. Lernkurven mit Trendlinie.
+
+
+**Verwendete Bibliotheksobjekte & Funktionen (Erstnennung)**
+
+| Funktion / Objekt | Library | Beschreibung |
+|---|---|---|
+| `np.array()` | `numpy` | Erstellt ein NumPy-Array aus einer Python-Liste. Im Unterschied zu `np.arange()`: direkte Werteangabe. Hier für definierte Radar-Chart-Winkel und Technologieparameter. |
 
 ---
-
 ## NB12 — Alternative Speicher (`12_Alternative_Speicher.ipynb`)
-
-Ergänzung zu NB11: Tiefere Analyse von zwei besonders interessanten Alternativen für die Schweiz — Pumpspeicher und saisonale Wärmespeicher.
+Tiefere Analyse von Pumpspeichern und saisonalen Wärmespeichern als Li-Ion-Alternativen für die Schweiz.
 
 ### Zellen 1–3 — Daten, Berechnung, Chart
-**Was passiert:** Schweizer Pumpspeicherkapazitäten aus BFE-Daten. Vergleich: Ein Pumpspeicher kann saisonal arbitrieren (Wasser im Sommer hochpumpen, im Winter Strom erzeugen). Eine Batterie kann nur stündlich/täglich arbitrieren. Chart zeigt die Grössenordnungen.
+**Was passiert:** Schweizer Pumpspeicher-Kapazitäten aus BFE-Daten. Vergleich: Pumpspeicher arbitriert saisonal (Sommer pumpen, Winter erzeugen), Batterie nur täglich/stündlich. Chart zeigt die Grössenordnungen nebeneinander.
+
+
+**Verwendete Bibliotheksobjekte & Funktionen (Erstnennung)**
+
+| Funktion / Objekt | Library | Beschreibung |
+|---|---|---|
+| `ax.set_yticks()` | `matplotlib.axes` | Setzt die Positionen der Y-Achsen-Ticks manuell. `.set_yticklabels()` setzt die zugehörigen Labels. Hier für kategorische Y-Achse in horizontalen Balkendiagrammen. |
 
 ---
-
 ## NB13 — Eigenverbrauch (`13_Eigenverbrauch.ipynb`)
+Berechnet Mehrwert einer Batterie für PV-Haushalte (Eigenverbrauchsoptimierung statt Grid-Arbitrage).
 
-Berechnet den Mehrwert einer Batterie für Haushalte mit Photovoltaik-Anlage — unabhängig von der Netz-Arbitrage.
+### Zellen 1–3 — Setup & Eigenverbrauchssimulation
+**Was passiert:** Haushaltstarife (HT/NT) aus Config in EUR. Synthetisches Tagesprofil: Solarertrag als Sinus-Glockenkurve (`np.sin()`), Haushaltsverbrauch mit Morgen- und Abendspitze. Simulation: Solarüberschuss → Batterie (wenn nicht voll), abends → Batterie (wenn nicht leer), sonst → Netzstrom. `np.where()` für vektorisierte Tarifwahl.
 
-### Zelle 1 — Setup
-**Was passiert:** Zusätzliche Parameter aus config.json: Haushalt-Tarif (Hochtarif/Niedertarif in CHF), umgerechnet in EUR. Eine Batterie kann Solar-Überschuss vom Mittag speichern und abends verwenden — statt ihn für wenig Geld einzuspeisen.
 
-### Zellen 2–3 — Eigenverbrauchssimulation
-**Was passiert:** Ein synthetisches Tagesprofil wird erzeugt: Solarertrag (Glockenkurve um Mittag), Haushaltsverbrauch (morgens und abends Spitzen). Die Batterie entscheidet: Solarüberschuss speichern oder ins Netz einspeisen? Abends: aus der Batterie versorgen oder teuren Netzstrom kaufen?
+**Verwendete Bibliotheksobjekte & Funktionen (Erstnennung)**
 
-**Warum synthetisches Profil?** Echte Messdaten pro Haushalt sind aus Datenschutzgründen nicht verfügbar. Synthetische Profile (aus Norm-Lastprofilen der Energiebranche) sind realistische Approximationen.
-
+| Funktion / Objekt | Library | Beschreibung |
+|---|---|---|
+| `np.where(arr, val_true, val_false)` | `numpy` | Ternärer Operator auf Arrays. Wo `arr` True → `val_true`, sonst `val_false`. Hier: `np.where(is_nt, NT_PREIS, HT_PREIS)` = vektorisierte Tarifwahl ohne Python-Loop. |
+| `.cumsum()` | `pandas / numpy` | Berechnet die kumulierte Summe. Hier für den SoC-Verlauf: jede Stunde wird die Lade-/Entladeleistung summiert. Schneller als ein Python-Loop für die Zustandsberechnung. |
 ### Zellen 4–6 — Wirtschaftlichkeit & Vergleich
-**Was passiert:** Der Eigenverbrauchsnutzen (Einsparung durch weniger Netzstrom-Kauf) wird berechnet und mit dem Arbitrage-Erlös verglichen. Für viele Privathaushalte ist Eigenverbrauch wirtschaftlich interessanter als Grid-Arbitrage.
+**Was passiert:** Eigenverbrauchsnutzen (Einsparung durch weniger Netzstrom-Kauf) wird berechnet und mit dem Arbitrage-Erlös verglichen. Für viele Privathaushalte ist Eigenverbrauch wirtschaftlich attraktiver.
 
 ---
-
 ## NB14 — Produkt-Steckbrief (`14_Produkt_Steckbrief.ipynb`)
+Erstellt formatierte Produkt-Datenblätter (wie technische Steckbriefe) für drei Marktsegmente.
 
-Erstellt formatierte Steckbrief-Karten für drei konkrete Produkt-Pakete (Privat, Gewerbe, Industrie) als druckbare Infografiken.
-
-### Zellen 1–2 — Setup & Daten
-**Was passiert:** Alle relevanten Kennzahlen aus `transfer.json` und `wirtschaftlichkeit.csv` werden geladen. Drei Produktpakete werden definiert: konkrete Empfehlungen für Grösse, Leistung, erwarteter Erlös, Amortisationszeit.
-
+### Zellen 1–2 — Setup & Produktpakete
+**Was passiert:** Alle Kennzahlen aus `transfer.json` und `wirtschaftlichkeit.csv` laden. Drei Produktpakete mit konkreten Empfehlungen für Grösse, Leistung, erwarteter ROI und Amortisationszeit definieren.
 ### Zellen 3–8 — Steckbrief-Charts
-**Was passiert:** Für jedes Produktpaket wird ein formatierter "Produktsteckbrief" als matplotlib-Figure erstellt — ähnlich wie ein technisches Datenblatt. Kein Koordinatenachsensystem, sondern freie Text- und Geometrie-Positionierung.
+**Was passiert:** Für jedes Produktpaket: eine matplotlib Figure als Infografik. Kein Koordinatensystem — stattdessen freie Text- und Geometrie-Positionierung mit `ax.text()` und `ax.add_patch()`.
 
-**Technisch:** `ax.text(x, y, text, ...)` und `ax.add_patch(Rectangle(...))` werden direkt auf dem Figure-Koordinatensystem verwendet, ohne eigentliche Plot-Daten. So kann man beliebige Layouts erstellen.
 
-### Zelle 9 — Abschlusskontrolle
-**Was passiert:** Alle Steckbrief-PNGs werden auf Existenz geprüft.
+**Verwendete Bibliotheksobjekte & Funktionen (Erstnennung)**
+
+| Funktion / Objekt | Library | Beschreibung |
+|---|---|---|
+| `ax.add_patch()` | `matplotlib.axes` | Fügt einen geometrischen 'Patch' (Rechteck, Kreis, Pfeil...) zur Achse hinzu. Hier für die Steckbrief-Rahmen und Trennlinien. Koordinaten sind in Achsen-Einheiten. |
+| `ax.axis('off')` | `matplotlib.axes` | Blendet alle Achsenelemente aus. Kompaktere Alternative zu `ax.set_axis_off()`. Notwendig für Infografiken die wie Dokument-Seiten aussehen sollen. |
 
 ---
-
 ## NB15 — Kombinierte Simulation (`15_Kombinierte_Simulation.ipynb`)
+Simuliert alle vier Dispatch-Strategien (Arbitrage, Eigenverbrauch, Hybrid statisch, Hybrid optimiert) in einem Lauf.
 
-Simuliert alle vier Dispatch-Strategien (Arbitrage, Eigenverbrauch, Hybrid statisch, Hybrid optimiert) für alle Segmente in einem einzigen Lauf und vergleicht die Ergebnisse.
+### Zellen 1–4 — Setup & Simulation
+**Was passiert:** Alle 4 Modi werden für jedes Segment simuliert. Lokale Alias-Variablen zeigen auf CFG-Farben (`C_ARB = C_PRICE`). `np.tile(np.arange(24), n_days)` erzeugt einen Stunden-Vektor für mehrere Tage. Hybrid-Modi: statisch wechselt nach Tageszeit, optimiert nutzt Look-Ahead.
 
-### Zelle 1 — Setup
-**Was passiert:** Alle Simulations-Parameter aus config.json laden. Spezifisch für NB15: lokale Alias-Variablen für die vier Dispatch-Modi werden definiert, die auf die globalen Farbvariablen zeigen.
 
-### Zellen 2–4 — Datenladen & Simulation
-**Was passiert:** Preisdaten und (falls vorhanden) Solarprofil-Daten werden geladen. Die `simulate_battery()`-Logik aus NB02 wird hier reimplementiert (keine Abhängigkeit — jedes Notebook ist für sich lauffähig), erweitert um zwei hybride Modi: Der statische Hybrid wechselt je nach Tageszeit zwischen Eigenverbrauch und Arbitrage. Der optimierte Hybrid maximiert den kombinierten Nutzen mit einem einfachen Look-Ahead-Algorithmus.
+**Verwendete Bibliotheksobjekte & Funktionen (Erstnennung)**
 
-### Zellen 5–9 — Vergleichs-Charts
-**Was passiert:** Für jeden der vier Modi werden Charts erstellt: Cashflow über Zeit, Lade-/Entlade-Häufigkeit, ROI-Vergleich. Ein Übersichts-Chart zeigt alle vier Modi nebeneinander.
-
-### Zellen 10–11 — Transfer & Abschluss
-**Was passiert:** Die Vergleichswerte werden in `transfer.json` unter `kombinierte_simulation` geschrieben. Abschlusskontrolle mit ✅/❌.
+| Funktion / Objekt | Library | Beschreibung |
+|---|---|---|
+| `np.tile()` | `numpy` | Wiederholt ein Array n-mal. `np.tile(np.arange(24), 365)` erzeugt einen Jahres-Stundenvektor [0,1,...,23,0,1,...]. Effizient für periodische Muster. |
+| `np.sum()` | `numpy` | Summiert alle Elemente eines Arrays (oder entlang einer Achse). Hier für die Zählung von Zellen in einer Matrix die eine Bedingung erfüllen. |
+| `mlines.Line2D()` | `matplotlib.lines` | Erzeugt ein Linien-Objekt für die Legende ohne echten Plot-Datenpunkt. Ermöglicht Legenden-Einträge mit Linien-Symbol für gestrichelte oder farbige Linien. |
+| `mcolors.Normalize()` | `matplotlib.colors` | Identisch zu `Normalize()` — normiert Werte auf [0,1]. Hier importiert als `mcolors` statt direkt aus `matplotlib.colors`. |
+| `plt.suptitle()` | `matplotlib.pyplot` | Setzt einen Haupttitel über alle Subplots einer Figure. `y=` steuert die vertikale Position (>1 = über der Figure-Grenze). |
+### Zellen 5–9 — Charts & Transfer
+**Was passiert:** Vergleichs-Charts: ROI aller 4 Modi nebeneinander, Cashflow-Kurven, Dispatch-Effizienz. Schlüsselkennzahlen in `transfer.json` unter `kombinierte_simulation`.
 
 ---
-
 ## NB99 — Datenprovenienz (`99_Datenprovenienz.ipynb`)
+Dokumentiert alle Datenquellen: Herkunft, Lizenz, Verarbeitungsschritte. Wissenschaftliche Nachvollziehbarkeit.
 
-Dokumentiert alle verwendeten Datenquellen: Woher kommen die Daten? Wie wurden sie aufbereitet? Welche Lizenz haben sie? Das ist die wissenschaftliche Nachvollziehbarkeit des Projekts.
+### Zellen 1–3 — Setup & Quellen-Übersicht
+**Was passiert:** `dataindex.csv` laden (das Register, das NB01/NB02 automatisch gefüllt haben). Alle Einträge nach Typ kategorisieren und anzeigen.
 
-### Zelle 1 — Setup
-**Was passiert:** Libraries laden, `dataindex.csv` lesen (das Register aller Datensätze, das NB01 und NB02 automatisch gefüllt haben).
 
-### Zellen 2–3 — Quellen-Übersicht
-**Was passiert:** Alle Einträge aus `dataindex.csv` werden nach Typ kategorisiert (Rohdaten, verarbeitete Daten, Zwischenergebnisse) und als formatierte Tabelle angezeigt.
+**Verwendete Bibliotheksobjekte & Funktionen (Erstnennung)**
 
-### Zellen 4–6 — Detaildokumentation
-**Was passiert:** Für jede Hauptdatenquelle wird ein ausführlicher Block ausgegeben:
-- **ENTSO-E Spotpreise:** Quelle, Zeitraum, Einheit (EUR/MWh), Häufigkeit (stündlich), Lizenz, Verarbeitungsschritte
-- **ENTSO-E Netzlast:** analog
-- **swisstopo Geodaten:** Koordinatensystem, Lizenz (Open Government Data)
-- **BFE Anlagenregister:** Beschreibung, Attribute, Lizenz
-- **NREL ATB:** Quelle, Jahr, Einheiten
+| Funktion / Objekt | Library | Beschreibung |
+|---|---|---|
+| `pd.notna()` | `pandas` | Prüft elementweise ob Werte NICHT NaN sind. Gegenteil von `pd.isna()`. Hier für bedingte Formatierung: Zeilenzahl nur anzeigen wenn vorhanden. |
+### Zellen 4–7 — Detaildokumentation & Charts
+**Was passiert:** Zeitlinie aller Datensatz-Einträge als Scatter-Plot. Für jede Hauptdatenquelle: Herkunft, Format, Lizenz, Verarbeitungsschritte. Sankey-Diagramm zeigt den Datenfluss von Rohdaten durch alle Notebooks.
 
-### Zellen 7–8 — Reproduzierbarkeits-Statement & Gesamtübersicht
-**Was passiert:** Ein formales Statement wird ausgegeben: "Alle Daten können mit denselben API-Keys und NB01 neu geladen werden. Die Analyse ist vollständig reproduzierbar." Eine abschliessende Visualisierung zeigt den Datenfluss: Welche Rohdaten fliessen in welche Notebooks?
+
+**Verwendete Bibliotheksobjekte & Funktionen (Erstnennung)**
+
+| Funktion / Objekt | Library | Beschreibung |
+|---|---|---|
+| `import matplotlib.dates as mdates` | `matplotlib.dates` | Modul für datumsbezogene Achsenformatierung. `mdates.DateFormatter('%b %Y')` formatiert Ticks als 'Jan 2024'. `mdates.AutoDateLocator()` wählt automatisch sinnvolle Tick-Abstände. |
+| `mpatches.FancyBboxPatch()` | `matplotlib.patches` | Rechteck mit abgerundeten oder anderen Eckenformen. `boxstyle='round,pad=0.3'` = abgerundete Ecken mit Innenabstand. Hier für Datenprovenienz-Flussdiagramm-Knoten. |
+| `Sankey()` | `matplotlib.sankey` | Zeichnet ein Sankey-Diagramm: Flussvisualisierung mit Breite proportional zur Menge. Hier für den Datenfluss: welche Datenmengen fliessen in welche Notebooks. |
+| `Line2D()` | `matplotlib.lines` | Identisch zu `mlines.Line2D()` — erzeugt ein Linien-Objekt für die Legende. |
+### Zellen 8 — Reproduzierbarkeits-Statement
+**Was passiert:** Formales Statement: 'Alle Daten können mit denselben API-Keys und NB01 neu geladen werden.' Gesamtübersicht: Datenfluss-Diagramm.
