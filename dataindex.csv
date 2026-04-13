@@ -36,4 +36,5 @@ timestamp,filename,source_url,local_path,data_type,rows,size_kb,status,supersede
 2026-04-06T19:42:52Z,bfs_kantone.csv,https://www.pxweb.bfs.admin.ch/api/v1/de/px-x-0102010000_101/px-x-0102010000_101.px,data\intermediate\bfs_kantone.csv,intermediate,26,0.3,superseded,2026-04-12T16:14:29Z,"BFS STATPOP 2024, PXWeb API"
 2026-04-12T16:13:44Z,wirtschaftlichkeit.csv,NB2:dispatch,data\intermediate\realistisch\wirtschaftlichkeit.csv,intermediate,4,0.6,active,,MODE=data
 2026-04-12T16:13:44Z,netzentlastung_szenarien.csv,NB02:szenario,data\intermediate\realistisch\netzentlastung_szenarien.csv,intermediate,4,0.4,active,,"MODE=data, Gleichzeitigkeit=realistisch (40%)"
-2026-04-12T16:14:29Z,bfs_kantone.csv,https://www.pxweb.bfs.admin.ch/api/v1/de/px-x-0102010000_101/px-x-0102010000_101.px,data\intermediate\bfs_kantone.csv,intermediate,26,0.3,active,,"BFS STATPOP 2024, PXWeb API"
+2026-04-12T16:14:29Z,bfs_kantone.csv,https://www.pxweb.bfs.admin.ch/api/v1/de/px-x-0102010000_101/px-x-0102010000_101.px,data\intermediate\bfs_kantone.csv,intermediate,26,0.3,superseded,2026-04-13T06:37:44Z,"BFS STATPOP 2024, PXWeb API"
+2026-04-13T06:37:44Z,bfs_kantone.csv,https://www.pxweb.bfs.admin.ch/api/v1/de/px-x-0102010000_101/px-x-0102010000_101.px,data\intermediate\bfs_kantone.csv,intermediate,26,0.3,active,,"BFS STATPOP 2024, PXWeb API"
