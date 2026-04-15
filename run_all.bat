@@ -1,163 +1,124 @@
 @echo off
-rem =============================================================================
-rem run_all.bat — Grid-Arbitrage mit Batteriespeichern CH
-rem SC26_Gruppe_2 | CAS Information Engineering — Scripting, ZHAW 2026
-rem =============================================================================
-rem
-rem Ausfuehrung (Doppelklick oder cmd):
-rem   run_all.bat              alle Notebooks
-rem   run_all.bat pflicht      nur NB01-NB04
-rem   run_all.bat kuer         nur Kuer (setzt Pflicht voraus)
-rem   run_all.bat nb 03        einzelnes Notebook
-rem
-rem Voraussetzung: jupyter-env unter C:\Users\patri\jupyter-env
-rem
-rem =============================================================================
+setlocal EnableDelayedExpansion
 
-setlocal enabledelayedexpansion
+rem =========================================================================
+rem run_all.bat  -- SC26_Gruppe_2  Grid-Arbitrage Batteriespeicher
+rem Verwendung:  run_all.bat [all|pflicht|kuer|org]
+rem =========================================================================
 
-rem ── Umgebung aktivieren ──────────────────────────────────────────────────────
-call C:\Users\patri\jupyter-env\Scripts\activate
-
-rem Asyncio ProactorLoop Warning unterdruecken (zmq/tornado, kein Fehler)
-set PYTHONASYNCIODEBUG=0
-
-set MODE=%~1
-set NB=%~2
+set MODE=%1
 if "%MODE%"=="" set MODE=all
 
-set TIMEOUT=1800
-set LOG_DIR=logs
-if not exist %LOG_DIR% mkdir %LOG_DIR%
+set OK_COUNT=0
+set FAIL_COUNT=0
+set FAIL_LIST=
 
-for /f "tokens=2 delims==" %%i in ('wmic os get localdatetime /value') do set DT=%%i
-set STAMP=%DT:~0,8%_%DT:~8,6%
-set LOG_FILE=%LOG_DIR%\run_all_%STAMP%.log
+rem -- Timestamp fuer Logdatei -----------------------------------------------
+set CUR_DATE=%DATE:~6,4%%DATE:~3,2%%DATE:~0,2%
+set CUR_TIME=%TIME:~0,2%%TIME:~3,2%%TIME:~6,2%
+set CUR_TIME=%CUR_TIME: =0%
+set TIMESTAMP=%CUR_DATE%_%CUR_TIME%
+if not exist logs mkdir logs
+set LOGFILE=logs\run_all_%TIMESTAMP%.log
+echo run_all.bat Modus=%MODE% > "%LOGFILE%"
 
-rem ── Pflicht-Reihenfolge ──────────────────────────────────────────────────────
-set PFLICHT[0]=01_Daten_Laden
-set PFLICHT[1]=02_Daten_Analyse
-set PFLICHT[2]=03_Visualisierungen
-set PFLICHT[3]=04_Business_Case
-set PFLICHT_COUNT=4
+rem -- venv aktivieren -------------------------------------------------------
+rem Pfad aus jupyter-env (C:\Users\patri\jupyter-env\Scripts\...)
+set VENV_ROOT=C:\Users\patri\jupyter-env
+set NBCONVERT_EXE=%VENV_ROOT%\Scripts\jupyter-nbconvert.EXE
 
-rem ── Kuer-Reihenfolge (transfer.json-Abhaengigkeiten) ────────────────────────
-set KUER[0]=06_Raeumliche_Analyse
-set KUER[1]=07_Cross_Border
-set KUER[2]=08_Marktdynamik
-set KUER[3]=08a_Animationen
-set KUER[4]=09_Revenue_Stacking
-set KUER[5]=10_Dispatch_Optimierung
-set KUER[6]=11_Technologievergleich
-set KUER[7]=12_Alternative_Speicher
-set KUER[8]=13_Eigenverbrauch
-set KUER[9]=15_Kombinierte_Simulation
-set KUER[10]=14_Produkt_Steckbrief
-set KUER[11]=05_Business_Strategy
-set KUER_COUNT=12
-
-rem ── Helper ───────────────────────────────────────────────────────────────────
-set HELPER[0]=00_Project_Overview
-set HELPER[1]=00b_Konventionen
-set HELPER[2]=99_Datenprovenienz
-set HELPER_COUNT=3
-
-rem ── Pruefen ob jupyter verfuegbar ────────────────────────────────────────────
-where jupyter >nul 2>&1
-if errorlevel 1 (
-    echo.
-    echo [FEHLER] 'jupyter' nicht gefunden.
-    echo          Pruefen ob Pfad korrekt: C:\Users\patri\jupyter-env\Scripts\activate
-    echo.
-    pause
-    exit /b 1
-)
-
-rem ── Header ───────────────────────────────────────────────────────────────────
-echo.
-echo ============================================================
-echo   run_all.bat -- Grid-Arbitrage SC26_Gruppe_2
-echo   Modus : %MODE%
-echo   Log   : %LOG_FILE%
-echo ============================================================
-echo run_all.bat Modus=%MODE% >> %LOG_FILE%
-
-set TOTAL_OK=0
-set TOTAL_FAIL=0
-
-rem ── Ausfuehrung ──────────────────────────────────────────────────────────────
-if "%MODE%"=="pflicht" (
-    call :run_list PFLICHT %PFLICHT_COUNT%
-) else if "%MODE%"=="kuer" (
-    echo [INFO] Kuer-Modus: NB01/NB02 muessen bereits ausgefuehrt sein.
-    call :run_list KUER %KUER_COUNT%
-) else if "%MODE%"=="nb" (
-    if "%NB%"=="" (
-        echo [FEHLER] Nummer angeben, z.B.:  run_all.bat nb 03
-        pause
-        exit /b 1
-    )
-    for /f "tokens=*" %%f in ('dir /b "%NB%_*.ipynb" 2^>nul') do (
-        set FOUND=%%f
-        goto :run_single
-    )
-    echo [FEHLER] Kein Notebook mit Nummer %NB% gefunden.
-    pause
-    exit /b 1
-    :run_single
-    call :run_nb "%FOUND:.ipynb=%"
+if exist "%NBCONVERT_EXE%" (
+    set NBCMD="%NBCONVERT_EXE%"
+    echo [venv] Verwende %NBCONVERT_EXE%
 ) else (
-    call :run_list PFLICHT %PFLICHT_COUNT%
-    call :run_list KUER %KUER_COUNT%
-    call :run_list HELPER %HELPER_COUNT%
+    rem Fallback 1: venv aktivieren und python -m nbconvert
+    if exist "%VENV_ROOT%\Scripts\activate.bat" (
+        call "%VENV_ROOT%\Scripts\activate.bat"
+        set NBCMD=python -m nbconvert
+        echo [venv] Aktiviert: %VENV_ROOT%
+    ) else (
+        rem Fallback 2: System-python
+        set NBCMD=python -m nbconvert
+        echo [warn] venv nicht gefunden - System-python wird verwendet
+    )
 )
 
-rem ── Zusammenfassung ──────────────────────────────────────────────────────────
-echo.
-echo ============================================================
-echo   OK    : %TOTAL_OK%
-echo   Fehler: %TOTAL_FAIL%
-echo   Log   : %LOG_FILE%
-echo ============================================================
-if %TOTAL_FAIL%==0 (
-    echo   [OK] Alle Notebooks erfolgreich ausgefuehrt.
+echo ================================================================
+echo  run_all.bat  Modus=%MODE%
+echo  Befehl: %NBCMD%
+echo ================================================================
+
+rem -- Pflicht ---------------------------------------------------------------
+if "%MODE%"=="kuer" goto :kuer
+if "%MODE%"=="org"  goto :org
+
+call :run_nb "notebooks/01_Daten_Laden"
+call :run_nb "notebooks/02_Daten_Bereinigung"
+call :run_nb "notebooks/03_Daten_Analyse"
+call :run_nb "notebooks/04_Visualisierungen"
+call :run_nb "notebooks/00_Business_Case"
+
+if "%MODE%"=="pflicht" goto :summary
+
+rem -- Kuer ------------------------------------------------------------------
+:kuer
+call :run_nb "kuer/K_01_Raeumliche_Analyse"
+call :run_nb "kuer/K_02_Cross_Border"
+call :run_nb "kuer/K_03_Marktdynamik"
+call :run_nb "kuer/K_04_Animationen"
+call :run_nb "kuer/K_05_Revenue_Stacking"
+call :run_nb "kuer/K_06_Dispatch_Optimierung"
+call :run_nb "kuer/K_07_Technologievergleich"
+call :run_nb "kuer/K_08_Alternative_Speicher"
+call :run_nb "kuer/K_09_Eigenverbrauch"
+call :run_nb "kuer/K_10_Produkt_Steckbrief"
+call :run_nb "kuer/K_99_Kombinierte_Simulation"
+call :run_nb "kuer/K_00_Business_Strategy"
+
+if "%MODE%"=="kuer" goto :summary
+
+rem -- Organisation ----------------------------------------------------------
+:org
+call :run_nb "organisation/O_01_Project_Overview"
+call :run_nb "organisation/O_99_Datenprovenienz"
+
+goto :summary
+
+rem =========================================================================
+:run_nb
+set NB_PATH=%~1
+set NB_FILE=%NB_PATH%.ipynb
+
+echo [>>] %NB_PATH%
+
+%NBCMD% --execute --to notebook --inplace "%NB_FILE%" >> "%LOGFILE%" 2>&1
+
+if !ERRORLEVEL! NEQ 0 (
+    echo [FAIL] %NB_PATH%
+    set /a FAIL_COUNT=FAIL_COUNT+1
+    set FAIL_LIST=!FAIL_LIST! %NB_PATH%
 ) else (
-    echo   [!!] %TOTAL_FAIL% Notebooks fehlgeschlagen -- Log pruefen.
+    echo [OK]   %NB_PATH%
+    set /a OK_COUNT=OK_COUNT+1
 )
+goto :eof
+
+rem =========================================================================
+:summary
+echo ================================================================
+echo OK     : %OK_COUNT%
+echo Fehler : %FAIL_COUNT%
+if not "%FAIL_LIST%"=="" (
+    echo.
+    echo Fehlgeschlagene Notebooks:
+    for %%F in (%FAIL_LIST%) do echo   [FAIL] %%F
+)
+echo ================================================================
+if %FAIL_COUNT% GTR 0 (
+    echo [!] %FAIL_COUNT% Fehler.
+) else (
+    echo [OK] Alle Notebooks erfolgreich ausgefuehrt.
+)
+echo Log: %LOGFILE%
 echo.
 pause
-exit /b %TOTAL_FAIL%
-
-rem =============================================================================
-:run_list
-set _ARR=%~1
-set _CNT=%~2
-echo.
-echo --- %_ARR% ---
-for /l %%i in (0,1,%_CNT%) do (
-    if %%i lss %_CNT% call :run_nb "!%_ARR%[%%i]!"
-)
-goto :eof
-
-rem =============================================================================
-:run_nb
-set _NB=%~1
-set _FILE=%_NB%.ipynb
-if not exist "%_FILE%" (
-    echo   [--] %_FILE% nicht gefunden -- uebersprungen
-    goto :eof
-)
-echo   [^>^>] %_NB%
-(echo   [^>^>] %_NB%) >> %LOG_FILE%
-jupyter nbconvert --to notebook --execute --inplace ^
-    --ExecutePreprocessor.timeout=%TIMEOUT% ^
-    --ExecutePreprocessor.kernel_name=python3 ^
-    "%_FILE%" >> %LOG_FILE% 2>&1
-if errorlevel 1 (
-    echo   [!!] FEHLER: %_NB%
-    set /a TOTAL_FAIL+=1
-) else (
-    echo   [OK] %_NB%
-    set /a TOTAL_OK+=1
-)
-goto :eof

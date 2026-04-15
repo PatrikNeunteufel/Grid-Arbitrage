@@ -1,0 +1,276 @@
+{
+  "_comment": "Zentrale Konfiguration — Grid-Arbitrage mit Batteriespeichern, SC26_Gruppe_2",
+  "_hint": "Schalter hier setzen, dann Notebooks neu ausführen (run_all.sh oder manuell).",
+  "mode": "data",
+  "_hint_mode": "'data' = echte Daten (ENTSO-E/BFE) | 'sim' = simulierte Daten",
+  "eur_chf": 0.97,
+  "_hint_eur_chf": "Fixkurs EUR→CHF (März 2026). Alle Berechnungen in EUR; CHF nur informativ. CFG.get('eur_chf', 0.97)",
+  "daten": {
+    "start_year": 2023,
+    "end_year": "heute",
+    "_hint_end_year": "'heute' = aktuelles Jahr automatisch; oder Zahl z.B. 2025"
+  },
+  "force_reload": {
+    "_hint": "true = Datei neu erzeugen/laden auch wenn bereits vorhanden",
+    "spot_prices": false,
+    "netzlast": false,
+    "crossborder": false,
+    "bfe": false,
+    "clean": false,
+    "wirtschaft": false,
+    "szenarien": false,
+    "import_export": false,
+    "spread_ts": false,
+    "bfs": false,
+    "zonenbilanzen": false,
+    "wetter": false
+  },
+  "_section_szenarien": "Gleichzeitigkeitsszenarien — genutzt in NB02–NB03 (Pflicht) und K_00/K_01 (Kür)",
+  "szenarien": {
+    "gleichzeitigkeit_aktiv": "realistisch",
+    "_hint_gleichzeitigkeit": "Umschalten: 'pessimistisch' | 'realistisch' | 'optimistisch'",
+    "ch_spitzenlast_gw": 10.5,
+    "_hint_optionen": "Werte unten nicht empfohlen zu ändern — beschreiben reale Marktannahmen",
+    "optionen": {
+      "pessimistisch": {
+        "label": "Pessimistisch",
+        "rate": 0.15,
+        "_rate_erklaerung": "15% Gleichzeitigkeit: fragmentierter Markt, keine Koordination",
+        "n_privat_2027": 10000,
+        "n_gewerbe_2027": 400,
+        "n_industrie_2027": 40,
+        "n_privat_2030": 50000,
+        "n_gewerbe_2030": 1000,
+        "n_industrie_2030": 100,
+        "n_privat_2035": 200000,
+        "n_gewerbe_2035": 5000,
+        "n_industrie_2035": 500
+      },
+      "realistisch": {
+        "label": "Realistisch",
+        "rate": 0.4,
+        "_rate_erklaerung": "40% Gleichzeitigkeit: unkoordinierter Markt, freiwillige Teilnahme",
+        "n_privat_2027": 50000,
+        "n_gewerbe_2027": 2000,
+        "n_industrie_2027": 200,
+        "n_privat_2030": 200000,
+        "n_gewerbe_2030": 8000,
+        "n_industrie_2030": 800,
+        "n_privat_2035": 800000,
+        "n_gewerbe_2035": 30000,
+        "n_industrie_2035": 2000
+      },
+      "optimistisch": {
+        "label": "Optimistisch",
+        "rate": 0.7,
+        "_rate_erklaerung": "70% Gleichzeitigkeit: koordinierter VPP-Dispatch, alle Batterien auf dasselbe Signal",
+        "n_privat_2027": 100000,
+        "n_gewerbe_2027": 5000,
+        "n_industrie_2027": 400,
+        "n_privat_2030": 500000,
+        "n_gewerbe_2030": 20000,
+        "n_industrie_2030": 2000,
+        "n_privat_2035": 1500000,
+        "n_gewerbe_2035": 60000,
+        "n_industrie_2035": 4000
+      }
+    }
+  },
+  "_section_pflicht": "Parameter für notebooks/00–04 (Pflichtabgabe)",
+  "pflicht": {
+    "simulation": {
+      "charge_quantile": 0.25,
+      "discharge_quantile": 0.75,
+      "soc_min_pct": 0.05,
+      "soc_max_pct": 0.95,
+      "efficiency_roundtrip": 0.92
+    },
+    "wirtschaftlichkeit": {
+      "capex_eur_kwh": {
+        "Privat_10kWh": 400,
+        "Gewerbe_100kWh": 300,
+        "Industrie_1MWh": 220,
+        "Utility_10MWh": 180
+      },
+      "opex_rate": 0.015,
+      "lifetime_j": 12,
+      "_hint_lifetime": "Li-Ion Betriebsdauer bis ~80% Kapazitätserhalt (Literatur: 10–15J). 12J = konservativer Mittelwert für Heimspeicher in CH-Klimabedingungen. Ziel-ROI = 100/lifetime_j (%/J) — wird in jedem NB lokal berechnet, nicht hier gespeichert.",
+      "_hint_opex": "1.5% des CAPEX/Jahr = Wartung, Versicherung, Monitoring. Branchenübliche Schätzung für Li-Ion-Heimspeicher CH."
+    },
+    "langzeit": {
+      "lifetime_long_j": 20
+    }
+  },
+  "_section_kuer": "Parameter ausschliesslich für kuer/ Notebooks (K_00–K_10, K_99)",
+  "kuer": {
+    "_section_raeumlich": "K_01 — Räumliche Analyse",
+    "raeumlich": {
+      "bvi_gewichte": {
+        "netzimbalance": 0.5,
+        "engpassnaehe": 0.3,
+        "saisonal": 0.2
+      }
+    },
+    "_section_crossborder": "K_02 — Cross-Border-Analyse",
+    "crossborder": {
+      "nachbarn": [
+        "DE",
+        "AT",
+        "IT",
+        "FR"
+      ]
+    },
+    "_section_markt": "K_03 — Marktdynamik & K_04 — Animationen",
+    "markt": {
+      "spread_breakeven_privat_eur_mwh": 30,
+      "capex_lernrate_pct_pro_jahr": 10,
+      "capex_ziel_privat_eur_kwh": 250
+    },
+    "_section_dispatch": "K_06 — Dispatch-Optimierung: DA-optimal vs. reaktiv",
+    "dispatch": {
+      "da_optimal_enabled": true
+    },
+    "_section_weather": "K_Weather — Wetter-Korrelationsanalyse (geplant, post Abgabe 11.05.2026)",
+    "weather": {
+      "locations": {
+        "CH": {
+          "lat": 46.8,
+          "lon": 8.2,
+          "label": "Schweiz (Zentrum)"
+        },
+        "DE": {
+          "lat": 53.6,
+          "lon": 8.5,
+          "label": "Deutschland (Nordsee-Küste)"
+        },
+        "AT": {
+          "lat": 47.8,
+          "lon": 13.0,
+          "label": "Österreich (Salzburg)"
+        }
+      },
+      "weather_variables": [
+        "wind_speed_10m",
+        "wind_speed_100m",
+        "temperature_2m",
+        "shortwave_radiation"
+      ],
+      "correlation_methods": [
+        "pearson",
+        "spearman"
+      ],
+      "price_quantile_threshold": 0.1
+    }
+  },
+  "visualisierung": {
+    "symlog_linthresh": 10000,
+    "output_dpi": 150,
+    "farben": {
+      "bg_dark": "#0d1117",
+      "_hint_bg_dark": "Haupt-Hintergrund (figure.facecolor)",
+      "bg_panel": "#141414",
+      "_hint_bg_panel": "Panel-Hintergrund (axes.facecolor)",
+      "c_price": "#FFA726",
+      "_hint_c_price": "Spotpreis-Linie",
+      "c_load": "#66BB6A",
+      "_hint_c_load": "Netzlast-Linie",
+      "c_charge": "#1565C0",
+      "_hint_c_charge": "Ladevorgang (Batterie lädt)",
+      "c_feed": "#B71C1C",
+      "_hint_c_feed": "Einspeisung (Batterie entlädt ins Netz)",
+      "seg_colors": [
+        "#42A5F5",
+        "#66BB6A",
+        "#FFA726",
+        "#EF5350"
+      ],
+      "_hint_seg_colors": "Segment-Palette: 0=Privat, 1=Gewerbe, 2=Industrie, 3=Utility",
+      "_section_ui": "UI-Strukturfarben (Achsen, Gitter, Legenden)",
+      "c_achse": "#aaaaaa",
+      "_hint_c_achse": "Achsenbeschriftungen (set_xlabel/ylabel color=)",
+      "c_tick": "#bbbbbb",
+      "_hint_c_tick": "Tick-Labels (tick_params colors=)",
+      "c_spine": "#333333",
+      "_hint_c_spine": "Achsenrahmen (for sp in ax.spines.values(): sp.set_edgecolor(...))",
+      "c_legende_bg": "#111111",
+      "_hint_c_legende_bg": "Legenden-Hintergrund (legend facecolor=)",
+      "c_gitter": "#cccccc",
+      "_hint_c_gitter": "Gitterlinien — mit alpha_flaeche kombinieren (grid color=)",
+      "_section_extra": "Funktionale Extrafarben (NB-übergreifend, semantisch)",
+      "c_dispatch": "#AB47BC",
+      "_hint_c_dispatch": "Dispatch-optimal / Lila (K_06/K_99)",
+      "c_stacking": "#5DCAA5",
+      "_hint_c_stacking": "Revenue Stacking / Türkis (K_05/K_99)",
+      "c_solar": "#FDD835",
+      "_hint_c_solar": "Solar-Ertrag / Gelb (NB03/K_01/K_03)",
+      "c_amber_dark": "#FF6F00",
+      "_hint_c_amber_dark": "Dunkel-Amber, Grenzwert/Warnung (NB03/06/08a/99)",
+      "c_cyan": "#26C6DA",
+      "_hint_c_cyan": "Cyan / alternative Speicher (K_08)",
+      "c_gruen_dark": "#388E3C",
+      "_hint_c_gruen_dark": "Dunkelgrün / Erneuerbare Energien (K_01)",
+      "c_no_disp": "#9E9E9E",
+      "_hint_c_no_disp": "Kein-Dispatch-Segment (Ausgangszustand)",
+      "_section_saison": "Saisonale Farbpalette — NB04 Spread-Monatscharts",
+      "saison_colors": {
+        "Winter": "#42A5F5",
+        "Frühling": "#66BB6A",
+        "Sommer": "#FDD835",
+        "Herbst": "#FF6F00"
+      },
+      "_hint_saison_colors": "SAISON_COLORS = _viz.get(\"saison_colors\", {}) in Setup-Zelle laden"
+    },
+    "animation_dpi": 100,
+    "_section_stil": "Gemeinsame Stilkonstanten — in Initialisierungszelle jedes chart-NB laden",
+    "stil": {
+      "_hint": "Alle chart-produzierenden NB laden diese Werte. Nur mit Begründung lokal abweichen.",
+      "_section_linien": "Linienbreiten",
+      "linienbreite_standard": 1.5,
+      "_hint_linienbreite_standard": "Hauptlinien: Zeitreihen, Cashflow-Kurven",
+      "linienbreite_duenn": 0.8,
+      "_hint_linienbreite_duenn": "Nebenlinien: Annotationspfeile, Rahmen, Hilfslinien",
+      "linienbreite_dick": 2.5,
+      "_hint_linienbreite_dick": "Hervorgehobene Linien: Spread-Kurven, Referenzlinien",
+      "_section_alpha": "Transparenz",
+      "alpha_flaeche": 0.12,
+      "_hint_alpha_flaeche": "Dezente Füllungen: ax.fill_between, grid",
+      "alpha_flaeche_stark": 0.35,
+      "_hint_alpha_flaeche_stark": "Balken, stärkere Flächenfüllungen",
+      "alpha_legende": 0.3,
+      "_hint_alpha_legende": "Legenden-Hintergrund (framealpha=)",
+      "alpha_linie_gedaempft": 0.55,
+      "_hint_alpha_linie_gedaempft": "Nebenlinien, sekundäre Zeitreihen",
+      "_section_schrift": "Schriftgrössen (pt)",
+      "schriftgroesse_titel": 13,
+      "_hint_schriftgroesse_titel": "Chart-Titel (ax.set_title)",
+      "schriftgroesse_achse": 10,
+      "_hint_schriftgroesse_achse": "Achsenbeschriftungen (set_xlabel/ylabel)",
+      "schriftgroesse_tick": 9,
+      "_hint_schriftgroesse_tick": "Tick-Labels (rcParams xtick/ytick.labelsize)",
+      "schriftgroesse_legende": 8,
+      "_hint_schriftgroesse_legende": "Legenden-Text (legend fontsize=)",
+      "schriftgroesse_klein": 7,
+      "_hint_schriftgroesse_klein": "Annotationen, kleine Hilfslabels (annotate fontsize=)"
+    }
+  },
+  "api_keys": {
+    "_hint": "API-Keys hier eintragen — nie im Notebook-Code hardcoden",
+    "entsoe": "ae4a8f81-a361-4201-a690-0804b51acae1"
+  },
+  "_section_kuer_aktiv": "Welche Kür-Notebooks werden eingereicht? true = aktiv. K_00 ist immer aktiv.",
+  "kuer_aktiv": {
+    "K_00": true,
+    "K_01": true,
+    "K_02": true,
+    "K_03": true,
+    "K_04": true,
+    "K_05": true,
+    "K_06": true,
+    "K_07": true,
+    "K_08": true,
+    "K_09": true,
+    "K_10": true,
+    "K_99": true
+  },
+  "_struktur": "Ordner: organisation/ | notebooks/ (Pflicht NB00–NB04) | kuer/ (K_00–K_10, K_99)"
+}
