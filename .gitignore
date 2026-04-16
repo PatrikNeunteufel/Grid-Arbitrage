@@ -1,9 +1,9 @@
 # Build
 .vs/
-.ipynb_checkpoints/
+**/.ipynb_checkpoints/
 data/
 # Temporäre Dateien
 *.tmp
 *.log
 
-.archive/
+**/.archive/
