@@ -1,0 +1,23 @@
+# ── Jupyter ───────────────────────────────────────────────────────────────────
+**/.ipynb_checkpoints/
+*.pyc
+__pycache__/
+
+# ── Daten (gross, nicht ins Repo) ─────────────────────────────────────────────
+data/raw/
+data/intermediate/
+# data/processed/ → ggf. einkommentieren wenn auch gross
+
+# ── Outputs ───────────────────────────────────────────────────────────────────
+output/charts/
+logs/
+
+# ── IDE / OS ──────────────────────────────────────────────────────────────────
+.vs/
+.vscode/
+.DS_Store
+Thumbs.db
+*.tmp
+
+# ── Archiv ────────────────────────────────────────────────────────────────────
+.archive/

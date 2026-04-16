@@ -1,20 +1,12 @@
 timestamp,filename,source_url,local_path,data_type,rows,size_kb,status,superseded_at,note
-2026-04-15T18:52:36Z,ch_spot_prices_raw.csv,https://transparency.entsoe.eu,../data\raw\ch_spot_prices_raw.csv,raw,28844,938.7,active,,"ENTSO-E API, entsoe-py, 2023-2026"
-2026-04-15T18:52:48Z,ch_netzlast_raw.csv,https://transparency.entsoe.eu (query_load CH),../data\raw\ch_netzlast_raw.csv,raw,28814,953.4,active,,"ENTSO-E query_load, jahresweise, MW→GW, 2023–2026"
-2026-04-15T18:52:55Z,ch_spot_prices_clean.csv,NB2:bereinigung,../data\processed\ch_spot_prices_clean.csv,processed,28847,1187.1,active,,MODE=data
-2026-04-15T18:53:02Z,wirtschaftlichkeit.csv,NB2:dispatch,../data\intermediate\realistisch\wirtschaftlichkeit.csv,intermediate,4,0.5,superseded,2026-04-15T20:00:32Z,MODE=data
-2026-04-15T18:53:02Z,netzentlastung_szenarien.csv,NB02:szenario,../data\intermediate\realistisch\netzentlastung_szenarien.csv,intermediate,4,0.4,superseded,2026-04-15T20:00:32Z,"MODE=data, Gleichzeitigkeit=realistisch (40%)"
-2026-04-15T18:53:03Z,spread_zeitreihe.csv,NB2:spread_analyse,../data\intermediate\spread_zeitreihe.csv,intermediate,41,2.7,active,,"Monatlicher Intra-Tag-Spread, Volatilität, Negativpreise"
-2026-04-15T18:53:50Z,bfs_kantone.csv,https://www.pxweb.bfs.admin.ch/api/v1/de/px-x-0102010000_101/px-x-0102010000_101.px,../data\intermediate\bfs_kantone.csv,intermediate,26,0.3,superseded,2026-04-15T20:01:09Z,"BFS STATPOP 2024, PXWeb API"
-2026-04-15T20:00:32Z,wirtschaftlichkeit.csv,NB2:dispatch,../data\intermediate\realistisch\wirtschaftlichkeit.csv,intermediate,4,0.5,superseded,2026-04-15T20:18:16Z,MODE=data
-2026-04-15T20:00:32Z,netzentlastung_szenarien.csv,NB02:szenario,../data\intermediate\realistisch\netzentlastung_szenarien.csv,intermediate,4,0.4,superseded,2026-04-15T20:18:16Z,"MODE=data, Gleichzeitigkeit=realistisch (40%)"
-2026-04-15T20:01:09Z,bfs_kantone.csv,https://www.pxweb.bfs.admin.ch/api/v1/de/px-x-0102010000_101/px-x-0102010000_101.px,../data\intermediate\bfs_kantone.csv,intermediate,26,0.3,superseded,2026-04-15T20:18:39Z,"BFS STATPOP 2024, PXWeb API"
-2026-04-15T20:18:16Z,wirtschaftlichkeit.csv,NB2:dispatch,../data\intermediate\realistisch\wirtschaftlichkeit.csv,intermediate,4,0.5,superseded,2026-04-15T20:31:27Z,MODE=data
-2026-04-15T20:18:16Z,netzentlastung_szenarien.csv,NB02:szenario,../data\intermediate\realistisch\netzentlastung_szenarien.csv,intermediate,4,0.4,superseded,2026-04-15T20:31:27Z,"MODE=data, Gleichzeitigkeit=realistisch (40%)"
-2026-04-15T20:18:39Z,bfs_kantone.csv,https://www.data.bfs.admin.ch/?dataType=px&dataNumber=900010,../data\intermediate\bfs_kantone.csv,intermediate,26,0.6,superseded,2026-04-15T20:34:40Z,"BFS STATPOP 2023, eingebettet"
-2026-04-15T20:31:27Z,wirtschaftlichkeit.csv,NB2:dispatch,../data\intermediate\realistisch\wirtschaftlichkeit.csv,intermediate,4,0.5,active,,MODE=data
-2026-04-15T20:31:27Z,netzentlastung_szenarien.csv,NB02:szenario,../data\intermediate\realistisch\netzentlastung_szenarien.csv,intermediate,4,0.4,active,,"MODE=data, Gleichzeitigkeit=realistisch (40%)"
-2026-04-15T20:34:40Z,bfs_kantone.csv,https://www.data.bfs.admin.ch/?dataType=px&dataNumber=900010,../data\intermediate\bfs_kantone.csv,intermediate,26,0.6,superseded,2026-04-16T07:24:58Z,"BFS STATPOP 2023, eingebettet"
-2026-04-16T07:24:58Z,bfs_kantone.csv,https://www.data.bfs.admin.ch/?dataType=px&dataNumber=900010,../data\intermediate\bfs_kantone.csv,intermediate,26,0.6,superseded,2026-04-16T07:29:11Z,"BFS STATPOP 2023, eingebettet"
-2026-04-16T07:29:11Z,bfs_kantone.csv,https://www.data.bfs.admin.ch/?dataType=px&dataNumber=900010,../data\intermediate\bfs_kantone.csv,intermediate,26,0.6,superseded,2026-04-16T07:30:00Z,"BFS STATPOP 2023, eingebettet"
-2026-04-16T07:30:00Z,bfs_kantone.csv,https://www.data.bfs.admin.ch/?dataType=px&dataNumber=900010,../data\intermediate\bfs_kantone.csv,intermediate,26,0.6,active,,"BFS STATPOP 2023, eingebettet"
+2026-04-16T18:52:00Z,ch_spot_prices_raw.csv,https://transparency.entsoe.eu,../data\raw\ch_spot_prices_raw.csv,raw,28868,939.5,active,,"ENTSO-E API, entsoe-py, 2023-2026"
+2026-04-16T18:52:17Z,ch_netzlast_raw.csv,https://transparency.entsoe.eu (query_load CH),../data\raw\ch_netzlast_raw.csv,raw,28837,954.2,active,,"ENTSO-E query_load, jahresweise, MW→GW, 2023–2026"
+2026-04-16T18:52:20Z,ch_spot_prices_clean.csv,NB2:bereinigung,../data\processed\ch_spot_prices_clean.csv,processed,28871,1188.1,active,,MODE=data
+2026-04-16T18:52:25Z,wirtschaftlichkeit.csv,NB2:dispatch,../data\intermediate\realistisch\wirtschaftlichkeit.csv,intermediate,4,0.6,superseded,2026-04-16T19:04:06Z,MODE=data
+2026-04-16T18:52:25Z,netzentlastung_szenarien.csv,NB02:szenario,../data\intermediate\realistisch\netzentlastung_szenarien.csv,intermediate,4,0.4,superseded,2026-04-16T19:04:06Z,"MODE=data, Gleichzeitigkeit=realistisch (40%)"
+2026-04-16T18:52:26Z,spread_zeitreihe.csv,NB2:spread_analyse,../data\intermediate\spread_zeitreihe.csv,intermediate,41,2.7,active,,"Monatlicher Intra-Tag-Spread, Volatilität, Negativpreise"
+2026-04-16T18:53:01Z,bfs_kantone.csv,https://www.pxweb.bfs.admin.ch/api/v1/de/px-x-0102010000_101/px-x-0102010000_101.px,../data\intermediate\bfs_kantone.csv,intermediate,26,0.3,superseded,2026-04-16T19:04:42Z,"BFS STATPOP 2024, PXWeb API"
+2026-04-16T18:55:24Z,ch_import_export_analyse.csv,"K_02: join(crossborder_raw, spot_prices_clean)",../data\intermediate\ch_import_export_analyse.csv,intermediate,28841,1461.9,active,,net_export_mw + price_eur_mwh + dispatch flag
+2026-04-16T19:04:06Z,wirtschaftlichkeit.csv,NB2:dispatch,../data\intermediate\realistisch\wirtschaftlichkeit.csv,intermediate,4,0.6,active,,MODE=data
+2026-04-16T19:04:06Z,netzentlastung_szenarien.csv,NB02:szenario,../data\intermediate\realistisch\netzentlastung_szenarien.csv,intermediate,4,0.4,active,,"MODE=data, Gleichzeitigkeit=realistisch (40%)"
+2026-04-16T19:04:42Z,bfs_kantone.csv,https://www.pxweb.bfs.admin.ch/api/v1/de/px-x-0102010000_101/px-x-0102010000_101.px,../data\intermediate\bfs_kantone.csv,intermediate,26,0.3,active,,"BFS STATPOP 2024, PXWeb API"
