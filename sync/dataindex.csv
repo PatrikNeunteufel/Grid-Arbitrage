@@ -14,4 +14,7 @@ timestamp,filename,source_url,local_path,data_type,rows,size_kb,status,supersede
 2026-04-15T20:18:39Z,bfs_kantone.csv,https://www.data.bfs.admin.ch/?dataType=px&dataNumber=900010,../data\intermediate\bfs_kantone.csv,intermediate,26,0.6,superseded,2026-04-15T20:34:40Z,"BFS STATPOP 2023, eingebettet"
 2026-04-15T20:31:27Z,wirtschaftlichkeit.csv,NB2:dispatch,../data\intermediate\realistisch\wirtschaftlichkeit.csv,intermediate,4,0.5,active,,MODE=data
 2026-04-15T20:31:27Z,netzentlastung_szenarien.csv,NB02:szenario,../data\intermediate\realistisch\netzentlastung_szenarien.csv,intermediate,4,0.4,active,,"MODE=data, Gleichzeitigkeit=realistisch (40%)"
-2026-04-15T20:34:40Z,bfs_kantone.csv,https://www.data.bfs.admin.ch/?dataType=px&dataNumber=900010,../data\intermediate\bfs_kantone.csv,intermediate,26,0.6,active,,"BFS STATPOP 2023, eingebettet"
+2026-04-15T20:34:40Z,bfs_kantone.csv,https://www.data.bfs.admin.ch/?dataType=px&dataNumber=900010,../data\intermediate\bfs_kantone.csv,intermediate,26,0.6,superseded,2026-04-16T07:24:58Z,"BFS STATPOP 2023, eingebettet"
+2026-04-16T07:24:58Z,bfs_kantone.csv,https://www.data.bfs.admin.ch/?dataType=px&dataNumber=900010,../data\intermediate\bfs_kantone.csv,intermediate,26,0.6,superseded,2026-04-16T07:29:11Z,"BFS STATPOP 2023, eingebettet"
+2026-04-16T07:29:11Z,bfs_kantone.csv,https://www.data.bfs.admin.ch/?dataType=px&dataNumber=900010,../data\intermediate\bfs_kantone.csv,intermediate,26,0.6,superseded,2026-04-16T07:30:00Z,"BFS STATPOP 2023, eingebettet"
+2026-04-16T07:30:00Z,bfs_kantone.csv,https://www.data.bfs.admin.ch/?dataType=px&dataNumber=900010,../data\intermediate\bfs_kantone.csv,intermediate,26,0.6,active,,"BFS STATPOP 2023, eingebettet"
