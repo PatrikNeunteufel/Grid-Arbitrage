@@ -1,311 +1,440 @@
-# Konzept: Experimentelle Erweiterung & Länderwechsel — SC26_Gruppe_2
+# Konzept: Ländererweiterung Grid-Arbitrage — DACH + Europa
 
-**Status:** Potenzielle Erweiterung nach Projektabgabe (11.05.2026)
-**Scope:** K_01b/c/d (Zonenmodell, Animationen, Grid-Topologie) + Länderwechsel Pflicht/Kür
-
----
-
-## 1. Struktur: experimental/ Ordner
-
-### 1.1 Ordnerhierarchie
-
-```
-SC26_Gruppe_2/
-├── kuer/                          ← Kür-Notebooks (Abgabe-relevant)
-│   ├── K_00_Business_Strategy.ipynb
-│   ├── K_01_Raeumliche_Analyse.ipynb
-│   └── ...
-├── experimental/                  ← NEU: Explorative Notebooks (NICHT Abgabe)
-│   ├── K_01b_Zonenmodell_Erweitert.ipynb
-│   ├── K_01c_Energiefluss_Animationen.ipynb
-│   └── K_01d_Grid_Topologie.ipynb
-├── data/
-│   ├── raw/
-│   │   ├── bfe_produktionsanlagen.gpkg      ← Standard
-│   │   ├── kantone.gpkg                     ← Standard
-│   │   └── EXP_*                            ← Experimentelle Downloads
-│   └── intermediate/
-│       ├── grid_topology/                   ← K_01d Cache
-│       │   ├── CH_earthosm_substations.geojson
-│       │   ├── CH_earthosm_lines.geojson
-│       │   └── earth_osm_raw/               ← Geofabrik PBF-Extrakte (~100–600 MB)
-│       └── EXP_*
-└── output/
-    └── charts/
-        ├── realistisch/                     ← Standard-Charts (Pflicht + Kür)
-        └── experimental/                    ← NEU: EXP_-Präfix Outputs
-            ├── EXP_kuer_k01b_bvi.png
-            ├── EXP_kuer_k01c_gif_a_tag_winter.gif
-            └── EXP_kuer_k01d_ch_netz_statisch.png
-```
-
-### 1.2 EXP_-Präfix Konvention
-
-Alle Dateien die aus experimental/-Notebooks stammen erhalten den Präfix `EXP_`:
-
-| Typ | Beispiel |
-|-----|---------|
-| Charts | `EXP_kuer_k01b_bvi.png` |
-| GIFs | `EXP_kuer_k01c_gif_a_tag_winter.gif` |
-| Grid-Cache | `EXP_kuer_k01d_ch_substations.geojson` |
-| Aufbereitungen | `EXP_kuer_k01d_ch_earthosm_lines.geojson` |
-
-**Zweck:** Trennung von Abgabe-Outputs und experimentellen Outputs im gleichen `output/`-Ordner.
-Die Konfiguration `EXP_CHARTS_DIR = '../output/charts/experimental'` ist in allen drei
-Notebooks bereits implementiert.
-
-### 1.3 Pfad-Anpassung bei Verschiebung nach experimental/
-
-Wenn Notebooks von `kuer/` nach `experimental/` verschoben werden, müssen relative Pfade angepasst werden:
-
-```python
-# In kuer/:        BASE_DIR = '..'
-# In experimental/: BASE_DIR = '../..'  (eine Ebene tiefer)
-BASE_DIR = '..'  # ⚙ anpassen wenn Notebook verschoben
-
-with open(os.path.join(BASE_DIR, 'sync', 'config.json')) as f:
-    CFG = json.load(f)
-DATA_DIR = os.path.join(BASE_DIR, 'data', 'raw')
-```
+**Status:** Potenzielle Erweiterung — nicht Teil der aktuellen Abgabe  
+**Scope:** DE, AT, CH (DACH) + alle ~30 ENTSO-E-Mitgliedsländer (Europa)
 
 ---
 
-## 2. Räumliche Granularität
+## 1. Grundidee
 
-### 2.1 Vergleich der Auflösungsebenen für CH
+Das Projekt ist bereits weitgehend parametrisierbar. Eine Ländererweiterung
+erfordert hauptsächlich drei Dinge:
 
-| Ebene | Anzahl | Datenquelle | API | Relevanz |
-|-------|--------|-------------|-----|---------|
-| **Kantone** | 26 | BFS STATPOP | PXWeb ✅ | K_01 aktuell |
-| **Bezirke** | ~150 | BFS STATPOP | PXWeb ✅ | Sinnvolle Zwischenebene |
-| **Gemeinden** | ~2'134 | BFS STATPOP + swisstopo | PXWeb + swissBOUNDARIES3D ✅ | Verbrauchsverteilung |
-| **Substations** | 147 | OSM / Swissgrid | earth-osm ✅ | Netzfluss (K_01d) |
-| **Baublöcke** | ~150'000 | swisstopo | GeoPackage | Zu granular für Verbrauchsmodell |
+1. **`config.json`**: Land als Parameter + Datenquellen-URLs je Land
+2. **NB01**: Bidding-Zone-Code dynamisch statt `'CH'` hardcoded
+3. **NB06**: Geodaten-Quellen länderspezifisch — verbleibende manuelle Arbeit
 
-### 2.2 Gemeinde-Auflösung implementieren
-
-BFS STATPOP liefert Bevölkerungsdaten auf Gemeindeebene im gleichen PXWeb-Format:
-
-```python
-# In K_01b: KANTON_TO_ZONE durch GEMEINDE_TO_ZONE ersetzen
-# BFS Gemeindegrenzen laden:
-GMD_FILE = os.path.join(DATA_DIR, 'gemeinden.gpkg')
-# Download via swisstopo swissBOUNDARIES3D (gleiche ZIP wie Kantone):
-# Enthält Layer 'swissBOUNDARIES3D_1_5_TLM_HOHEITSGEBIET' mit ~2134 Gemeinden
-
-# BFS STATPOP Gemeinden (PXWeb, gleiche API):
-BFS_GMD_API = 'https://www.pxweb.bfs.admin.ch/api/v1/de/px-x-0102010000_101/px-x-0102010000_101.px'
-# Der Code in K_01 ist bereits generisch — nur die Aggregationsebene (Kanton vs. Gemeinde) ändern
-```
-
-**Einschränkung:** Installierte Produktionsleistung (BFE GeoPackage) liegt auf Anlagenebene vor
-und lässt sich auf Gemeindeebene aggregieren — kein Mehraufwand.
-
-### 2.3 NUTS-3 für internationale Vergleichbarkeit
-
-Für DACH-Erweiterung ist NUTS-3 die geeignete supranationale Ebene:
-
-```python
-# Eurostat NUTS-2/3 GeoJSON (einheitlich für ganz Europa):
-NUTS_URL = 'https://gisco-services.ec.europa.eu/distribution/v2/nuts/geojson/NUTS_RG_01M_2021_4326.geojson'
-gdf_nuts = gpd.read_file(NUTS_URL)
-
-# CH NUTS-3 = 26 Kantone (identisch mit Kantonsebene)
-# DE NUTS-3 = 401 Kreise/kreisfreie Städte
-# AT NUTS-3 = 35 Gruppen von Gemeinden
-gdf_ch_nuts3 = gdf_nuts[(gdf_nuts['LEVL_CODE']==3) & (gdf_nuts['CNTR_CODE']=='CH')]
-```
+**Wichtige Erkenntnis:** ENTSO-E ist der Dachverband aller europäischen
+Übertragungsnetzbetreiber. Die Transparency Platform deckt ~30 Länder ab.
+`entsoe-py` abstrahiert alle über denselben API-Call — nur der Bidding-Zone-Code
+ändert sich. Damit sind **NB01–NB05 und NB07 für ganz Europa generisch**, sobald
+die Bidding-Zone-Tabelle in `config.json` gepflegt ist. NB06 bleibt der einzige
+echte länderspezifische Aufwand.
 
 ---
 
-## 3. Real vs. Synthetisch — Kennzeichnungskonvention
-
-In allen drei experimentellen Notebooks werden Zellen mit Badges markiert:
-
-| Badge | Bedeutung |
-|-------|-----------|
-| `📡 ECHTE DATEN` | Zelle lädt oder verarbeitet echte Messdaten/Geodaten |
-| `🔬 MODELLIERT` | Zelle erzeugt synthetische/modellierte Ausgaben |
-| `✅ KALIBRIERT` | Modellwerte gegen Referenzdaten validiert |
-| `⚙ KONFIGURATION` | Setup-Zelle, nur Parameter |
-| `💾 DOWNLOAD` | Lädt externe Daten herunter (Internet benötigt) |
-
-**Wichtig für Projektbericht:** Alle Lastfluss-Visualisierungen (K_01c GIF C/D/E, K_01d GIFs)
-sind synthetisch modelliert — kein echter DC-Lastfluss-Solver. Nur die Topologie (Knoten/Kanten)
-in K_01d basiert auf echten OSM-Daten.
-
----
-
-## 4. Datenbeschaffung Grid-Topologie (K_01d)
-
-### 4.1 Prioritätskette
-
-```
-P1: earth-osm (Geofabrik PBF)         ← vollständigste OSM-Quelle
-    └── from earth_osm.eo import save_osm_data
-    └── region_list=['switzerland'], primary_name='power'
-    └── Cache: data/intermediate/grid_topology/CH_earthosm_*.geojson
-
-P2: Overpass API                        ← direktes OSM, Timeout-Risiko
-    └── 4 Mirror-Fallbacks
-    └── Cache: data/intermediate/grid_topology/CH_substations.json
-
-P3: PyPSA-Eur Zenodo                   ← preprocessed, inkl. elektr. Parameter
-    └── zenodo.org/records/14144752
-    └── buses.csv + lines.csv, Filter nach 'country'=='CH'
-
-P4: Hardcoded Baseline                 ← offline-fähig, CH 27 Knoten
-    └── Aus Swissgrid-Publikationen
-```
-
-### 4.2 earth-osm korrekte API (v3.0.2)
-
-```python
-# FALSCH (führte zu AttributeError):
-import earth_osm as eo
-eo.save_osm_data(...)
-
-# KORREKT:
-from earth_osm.eo import save_osm_data as _eo_save
-_eo_save(
-    region_list=['switzerland'],   # Geofabrik-Regionsnamen (Kleinbuchstaben)
-    primary_name='power',
-    feature_list=['substation', 'line'],
-    out_dir='./earth_data',        # Output-Verzeichnis
-    data_dir='./earth_data',       # PBF-Cache-Verzeichnis
-    out_format='geojson',          # String, nicht Liste!
-    out_aggregate=False,
-    data_source='geofabrik',
-    update=False,
-    mp=False,
-)
-```
-
-### 4.3 Output-Dateinamen (earth-osm v3.0.2)
-
-earth-osm erzeugt Dateien unter `<out_dir>/out/`:
-- `CH_raw_substations.geojson` (wenn region='switzerland' → ISO CH)
-- `CH_raw_lines.geojson`
-
-Bei unbekanntem Mapping: `glob.glob(out_dir + '/**/*substation*', recursive=True)`
-
----
-
-## 5. Länderwechsel — Pflicht und Kür
-
-### 5.1 Was heute schon parametrisiert ist
-
-Die folgenden Notebooks sind **bereits ländergenerisch** durch `BZ_CODE`/`CC_CODE`:
-
-| Notebook | Status | Änderung nötig |
-|----------|--------|----------------|
-| NB01 Spotpreise | ✅ über `BZ_CODE` | Nur `config.json` ändern |
-| NB02–NB05 Analyse | ✅ preisneutral | Label-Anpassung (Titel) |
-| NB07 Cross-Border | ✅ via `NEIGHBORS` | `nachbarn_per_land` ergänzen |
-| K_01d Grid | ✅ via `CC_CODE` | `COUNTRY_CONFIG` ergänzen |
-
-### 5.2 config.json — empfohlene Erweiterung
+## 2. Vorgeschlagene config.json-Erweiterung
 
 ```json
 "land": {
+  "_hint": "Aktives Analyiseland. Umschalten → NB01–NB07 neu ausführen.",
   "aktiv": "CH",
+  "_hint_aktiv": "DACH: 'CH' | 'DE' | 'AT' — Europa: beliebiger Code aus entsoe_bidding_zones",
+
   "optionen": {
+
     "CH": {
       "label": "Schweiz",
       "entsoe_bidding_zone": "10YCH-SWISSGRIDZ",
       "entsoe_country_code": "CH",
-      "waehrung": "EUR"
+      "waehrung": "EUR",
+      "preise_url": "https://transparency.entsoe.eu",
+      "statistik": {
+        "bevoelkerung_url": "https://www.bfs.admin.ch/bfs/de/home/statistiken/bevoelkerung.html",
+        "bevoelkerung_api": "https://www.pxweb.bfs.ch/api/v1/de/px-x-0102010000_101",
+        "geodaten_url": "https://data.geo.admin.ch/ch.swisstopo.swissboundaries3d/",
+        "produktion_url": "https://data.geo.admin.ch/ch.bfe.elektrizitaetsproduktionsanlagen/",
+        "_note": "BFS PXWeb-API + swisstopo swissBOUNDARIES3D — bereits implementiert"
+      },
+      "regulierung": {
+        "netzgebiet": "Swissgrid",
+        "flexmarkt_url": "https://www.swissgrid.ch/de/home/customers/topics/ancillary-services.html"
+      }
     },
+
     "DE": {
       "label": "Deutschland",
       "entsoe_bidding_zone": "10Y1001A1001A83F",
       "entsoe_country_code": "DE",
-      "waehrung": "EUR"
+      "waehrung": "EUR",
+      "preise_url": "https://transparency.entsoe.eu",
+      "statistik": {
+        "bevoelkerung_url": "https://www.destatis.de/DE/Themen/Gesellschaft-Umwelt/Bevoelkerung",
+        "bevoelkerung_api": "https://www-genesis.destatis.de/api/v2.2/",
+        "_hint_api": "GENESIS-Online REST API — kostenlos, kein Key nötig für Basisdaten",
+        "geodaten_url": "https://gdz.bkg.bund.de/index.php/default/digitale-geodaten/verwaltungsgebiete.html",
+        "_hint_geo": "BKG VG250 Gemeindegrenzen (GeoPackage/Shapefile) — entspricht swisstopo",
+        "produktion_url": "https://www.bundesnetzagentur.de/DE/Fachthemen/ElektrizitaetundGas/ErneuerbareEnergien/ZahlenDaten/start.html",
+        "_hint_prod": "Marktstammdatenregister (MaStR) — REST API, vollständiges Anlagenregister"
+      },
+      "regulierung": {
+        "netzgebiet": "50Hertz / Amprion / TenneT / TransnetBW",
+        "flexmarkt_url": "https://www.regelleistung.net"
+      }
     },
+
     "AT": {
       "label": "Österreich",
       "entsoe_bidding_zone": "10YAT-APG------L",
       "entsoe_country_code": "AT",
-      "waehrung": "EUR"
+      "waehrung": "EUR",
+      "preise_url": "https://transparency.entsoe.eu",
+      "statistik": {
+        "bevoelkerung_url": "https://www.statistik.at/statistiken/bevoelkerung-und-soziales/bevoelkerung",
+        "bevoelkerung_api": "https://data.statistik.gv.at/web/meta.jsp",
+        "_hint_api": "Statistik Austria Open Data — SDMX/JSON API",
+        "geodaten_url": "https://data.statistik.gv.at/web/meta.jsp?dataset=OGDEXT_GEM_1",
+        "_hint_geo": "BEV Gemeindegrenzen via Open Government Data Austria",
+        "produktion_url": "https://www.e-control.at/statistik/strom/betriebsstatistik"
+      },
+      "regulierung": {
+        "netzgebiet": "APG (Austrian Power Grid)",
+        "flexmarkt_url": "https://www.apg.at/markt/regelenergie"
+      }
     }
+  },
+
+  "_section_europa": "Für Europa-Erweiterung: Bidding-Zone-Tabelle und Eurostat-API",
+
+  "entsoe_bidding_zones": {
+    "_hint": "Vollständige ENTSO-E Bidding-Zone-Codes. Quelle: transparency.entsoe.eu/content/static_content/Static%20content/web%20api/Guide.html",
+    "FR": "10YFR-RTE------C",
+    "ES": "10YES-REE------0",
+    "PT": "10YPT-REN------W",
+    "IT_NORD": "10Y1001A1001A73I",
+    "IT_CNORD": "10Y1001A1001A70O",
+    "IT_SUD": "10Y1001A1001A788",
+    "IT_CSUD": "10Y1001A1001A71M",
+    "IT_SIC": "10Y1001A1001A76C",
+    "IT_SAR": "10Y1001A1001A74G",
+    "NL": "10YNL----------L",
+    "BE": "10YBE----------2",
+    "LU": "10YLU-CEGEDEL-NQ",
+    "PL": "10YPL-AREA-----S",
+    "CZ": "10YCZ-CEPS-----N",
+    "SK": "10YSK-SEPS-----K",
+    "HU": "10YHU-MAVIR----U",
+    "RO": "10YRO-TEL------P",
+    "SI": "10YSI-ELES-----O",
+    "HR": "10YHR-HEP------M",
+    "RS": "10YCS-SERBIATSО",
+    "BG": "10YCA-BULGARIA-R",
+    "GR": "10YGR-HTSO-----Y",
+    "DK_W": "10YDK-1--------W",
+    "DK_E": "10YDK-2--------M",
+    "NO_1": "10YNO-1--------2",
+    "NO_2": "10YNO-2--------T",
+    "NO_3": "10YNO-3--------J",
+    "NO_4": "10YNO-4--------9",
+    "NO_5": "10Y1001A1001A48H",
+    "SE_1": "10Y1001A1001A44P",
+    "SE_2": "10Y1001A1001A45N",
+    "SE_3": "10Y1001A1001A46L",
+    "SE_4": "10Y1001A1001A47J",
+    "FI": "10YFI-1--------U",
+    "EE": "10Y1001A1001A39I",
+    "LV": "10YLV-1001A00074",
+    "LT": "10YLT-1001A0008Q",
+    "GB": "10YGB----------A",
+    "_hint_GB": "UK nicht EUR — Währungsumrechnung nötig (GBP)",
+    "_hint_IT": "Italien hat 6 Preis-Zonen (Nord/CentroNord/CentroSud/Sud/Sicilia/Sardegna)",
+    "_hint_NO_SE": "Norwegen/Schweden haben je 4–5 Preis-Zonen (regionale Engpässe)"
+  },
+
+  "eurostat": {
+    "_hint": "Eurostat REST API — einheitliche Bevölkerungs- und Energiedaten für alle EU-Länder",
+    "api_base": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/",
+    "bevoelkerung_dataset": "demo_pjan",
+    "_hint_bev": "Annual population by sex and age — alle EU/EEA Länder, NUTS-2 Regionen",
+    "bevoelkerung_url": "https://ec.europa.eu/eurostat/databrowser/view/demo_pjan",
+    "energie_dataset": "nrg_ind_peh",
+    "_hint_energie": "Strom-Endverbrauch nach Sektor — alle EU-Länder",
+    "energie_url": "https://ec.europa.eu/eurostat/databrowser/view/nrg_ind_peh",
+    "nuts_geodaten_url": "https://gisco-services.ec.europa.eu/distribution/v2/nuts/geojson/NUTS_RG_01M_2021_4326.geojson",
+    "_hint_nuts": "NUTS-2 Regionsgrenzen für ganz Europa als GeoJSON — direkt in geopandas ladbar"
   }
 }
 ```
 
-**Aktivierung:** `"aktiv": "DE"` setzen → NB01–NB05, NB07, K_01d laufen für DE.
+---
 
-### 5.3 Was bei Länderwechsel manuell angepasst werden muss
+## 3. Code-Änderungen je Notebook
 
-#### NB06 (räumliche Analyse) — grösster Aufwand
-
-| Element | CH | DE | AT | Generisch (Europa) |
-|---------|----|----|----|--------------------|
-| Kantonsgrenzen | swisstopo GPKG | BKG VG250 | BEV GEM | Eurostat NUTS-3 |
-| Bevölkerung | BFS PXWeb | GENESIS API | Statistik Austria | Eurostat `demo_pjan` |
-| Produktionsanlagen | BFE GPKG | MaStR REST | E-Control CSV | — kein EU-Register |
-| Projektion | EPSG:2056 | EPSG:25832 | EPSG:31258 | EPSG:4326 |
-
-#### K_01b (6-Zonen-Modell)
+### NB01 — Daten laden
 
 ```python
-# KANTON_TO_ZONE_B: durch länderspezifische Verwaltungseinheiten ersetzen
-# DE: 16 Bundesländer → z.B. 5 Netzzonen (50Hertz/Amprion/TenneT/TransnetBW + Import)
-# AT: 9 Bundesländer → 2-3 Zonen (West/Mitte/Ost nach APG-Struktur)
+# Setup: Land aus config
+_land    = CFG.get('land', {})
+_aktiv   = _land.get('aktiv', 'CH')
+_opt     = _land['optionen'][_aktiv]
 
-KANTON_TO_ZONE_B = {
-    # DE-Beispiel:
-    'DE-BB': 'Nordost-DE', 'DE-BE': 'Nordost-DE',  # 50Hertz
-    'DE-NW': 'West-DE',    'DE-RP': 'West-DE',      # Amprion
-    'DE-BY': 'Süd-DE',     'DE-BW': 'Süd-DE',       # TransnetBW + TenneT
-    # ...
+BZ_CODE  = _opt['entsoe_bidding_zone']   # statt '10YCH-SWISSGRIDZ'
+CC_CODE  = _opt['entsoe_country_code']   # statt 'CH'
+WAEHRUNG = _opt.get('waehrung', 'EUR')
+
+# Preise laden: einzige Änderung
+ts = client.query_day_ahead_prices(BZ_CODE, ...)   # statt 'CH'
+# Netzlast:
+ts = client.query_load(CC_CODE, ...)               # statt 'CH'
+```
+
+### NB06 — Räumliche Analyse (grösste manuelle Arbeit)
+
+| Schritt | CH (heute) | DE | AT | Europa generisch |
+|---------|-----------|----|----|-----------------|
+| Regionsgrenzen | swisstopo GeoPackage | BKG VG250 | BEV GEM | **Eurostat NUTS-2 GeoJSON** |
+| Bevölkerung | BFS PXWeb API | GENESIS API | Statistik Austria API | **Eurostat `demo_pjan`** |
+| Produktionsanlagen | BFE GeoPackage | MaStR API | E-Control CSV | kein EU-Register — länderspezifisch |
+| Projektion | EPSG:2056 (LV95) | EPSG:25832 (UTM32N) | EPSG:31258 (MGI/AUT) | **EPSG:4326 (WGS84)** |
+
+→ **Aufwand**: Die Lade-Logik muss je Land differenziert werden. Empfehlung: eigene
+`_load_geodaten_{land}.py`-Hilfsfunktion oder bedingte Blöcke im Notebook.
+
+### NB07 — Cross-Border (bereits parametrisiert)
+
+`NEIGHBORS` wird bereits aus `CFG['kuer']['crossborder']['nachbarn']` gelesen —
+bei DE würden andere Nachbarn relevant: `["AT","CH","FR","DK","PL","CZ","NL","LU","BE"]`
+
+### NB02–NB05 — Keine Änderung nötig
+
+Alle Berechnungen verwenden EUR/MWh (ENTSO-E-Standard) und sind
+segment-generisch. Nur Labeling (`'CH'` in Titel) müsste angepasst werden.
+
+---
+
+## 4. Umsetzungsaufwand DACH (Schätzung)
+
+| Komponente | Aufwand | Bemerkung |
+|---|---|---|
+| config.json Erweiterung | 1h | strukturell fertig (s. oben) |
+| NB01: BZ/CC dynamisieren | 1h | 2–3 Zeilen pro Dataset |
+| NB07: Nachbarn anpassen | ½h | bereits parametrisiert |
+| NB06 DE: Geodaten + MaStR | 2–3 Tage | andere API, andere Projektion |
+| NB06 AT: Geodaten | 1–2 Tage | ähnlich DE, kleinere Datenmenge |
+| NB04/05: Labeling | ½h | Titel/Kommentare |
+| **Total CH→DE** | **~3–4 Tage** | Hauptaufwand NB06 |
+
+---
+
+## 5. Nicht-parametrisierbare Aspekte (DACH)
+
+- **BFS-Daten**: CH-spezifisch (26 Kantone, PXWeb-Format). DE hat 16 Bundesländer
+  mit GENESIS-API, AT 9 Bundesländer mit SDMX. Unterschiedliche Granularität und
+  API-Struktur → manuelle Anpassung der Aggregationslogik.
+- **Engpasslinien** (NB06): hardcoded Koordinaten (`ENGPASSLINIEN`-Liste) — müssen
+  je Land neu definiert werden (Swissgrid → APG / 50Hertz etc.)
+- **Tarif-Modell** (NB13): HT/NT-Zeiten und Tarifniveau sind länderspezifisch.
+  DE hat SmartMeter-Rollout mit anderen Zeitfenstern, AT ähnlich CH.
+- **Währung**: alle drei DACH-Länder nutzen EUR → kein FX-Problem.
+
+---
+
+## 6. Europa-Erweiterung
+
+### 6.1 Was ENTSO-E abdeckt
+
+ENTSO-E ist der Verbund aller europäischen Übertragungsnetzbetreiber (TSO) und
+verpflichtet zur Datenpublikation auf der Transparency Platform. Über `entsoe-py`
+sind folgende Länder mit demselben API-Call erreichbar — nur der Bidding-Zone-Code
+ändert sich:
+
+| Region | Länder | Besonderheiten |
+|--------|--------|---------------|
+| DACH | DE, AT, CH | Eine Zone je Land; EUR |
+| Westeuropa | FR, ES, PT, NL, BE, LU | Eine Zone je Land; EUR |
+| Nordics | DK×2, NO×5, SE×4, FI | Mehrere Preis-Zonen je Land |
+| Osteuropa | PL, CZ, SK, HU, RO, BG | Eine Zone je Land; EUR |
+| Balkan | SI, HR, RS, GR | Teilweise Datenlücken |
+| Baltikum | EE, LV, LT | Eine Zone je Land; EUR |
+| UK | GB | GBP — Währungsumrechnung nötig |
+| Italien | IT×6 | 6 Preis-Zonen (Nord bis Sizilien) |
+
+→ Die vollständige Bidding-Zone-Tabelle ist in `config.json` unter
+`entsoe_bidding_zones` hinterlegt (s. Abschnitt 2).
+
+### 6.2 NB01–NB05 und NB07: generisch für ganz Europa
+
+Sobald `BZ_CODE` und `CC_CODE` aus `config.json` gelesen werden (s. Abschnitt 3),
+laufen diese Notebooks für jedes ENTSO-E-Land ohne weitere Anpassung:
+
+```python
+# Beispiel: Frankreich statt Schweiz — einzige Änderung in config.json:
+# "aktiv": "FR"
+# "entsoe_bidding_zone": "10YFR-RTE------C"
+# "entsoe_country_code": "FR"
+
+ts = client.query_day_ahead_prices(BZ_CODE, start=start, end=end)  # funktioniert für alle
+ts = client.query_load(CC_CODE, start=start, end=end)              # funktioniert für alle
+```
+
+Länder mit mehreren Zonen (NO, SE, IT) brauchen eine zusätzliche Auswahl:
+
+```python
+# config.json: "entsoe_bidding_zone": "10Y1001A1001A73I"  (IT Nord)
+# oder alle Zonen laden und aggregieren:
+# "entsoe_bidding_zones_multi": ["10Y1001A1001A73I", "10Y1001A1001A70O", ...]
+```
+
+**NB07 (Cross-Border):** `NEIGHBORS` ist bereits aus `config.json` parametrisiert.
+Länderspezifische Nachbarlisten in `config.json` ergänzen:
+
+```json
+"nachbarn_per_land": {
+  "CH": ["DE", "AT", "IT", "FR"],
+  "DE": ["AT", "CH", "FR", "DK", "PL", "CZ", "NL", "LU", "BE"],
+  "FR": ["DE", "CH", "IT", "ES", "BE", "LU"],
+  "NO": ["SE", "DK", "FI", "GB", "NL"]
 }
 ```
 
-#### K_01c (Animationen)
+### 6.3 NB06: Eurostat als europäischer Generalschlüssel
 
-Nur `KANTON_TO_ZONE_B` und `ZONE_CENTERS` müssen für das neue Land angepasst werden.
-Das Profil-Modell (CF-Faktoren) bleibt gleich, `ZONE_PROD_INSTALLED` muss durch
-ENTSO-E `query_installed_generation_capacity` für das neue Land ersetzt werden.
+Für die räumliche Analyse bietet Eurostat zwei entscheidende Ressourcen:
 
-#### K_01d (Grid-Topologie)
+**Bevölkerung (ersetzt BFS/GENESIS/Statistik Austria für alle EU-Länder):**
 
-Nur `CC_CODE = 'DE'` setzen — alle Loader sind bereits ländergenerisch.
-Für DE/AT ohne Baseline: Overpass oder earth-osm laden ~200–800 Knoten und ~500–2000 Kanten.
-
----
-
-## 6. Umsetzungsreihenfolge nach Projektabgabe
-
-```
-Woche 1:
-  ✅ config.json: land.aktiv + DACH-Optionen
-  ✅ NB01: BZ_CODE/CC_CODE parametrisieren (2–3 Zeilen)
-  ✅ NB07: nachbarn_per_land für DE/AT
-  ✅ K_01d: CC_CODE='DE' testen → automatisch Topologie via earth-osm
-
-Woche 2:
-  ⚠️ NB06 DE: BKG-Geodaten + MaStR-Anlagen (Hauptaufwand)
-  ⚠️ K_01b DE: Bundesland-Zonen definieren
-
-Woche 3:
-  ⚠️ Europa generisch: Eurostat NUTS-3 + demo_pjan in NB06
-  ✅ K_01d: BATCH_RUN=True für CH/DE/AT/FR Vergleichskarten
-
-Optional (nach Bedarf):
-  🔬 Echter DC-Lastfluss: PyPSA mit Zenodo-Netz (r/x vorhanden)
-  🔬 Gemeinde-Auflösung K_01b CH: swissBOUNDARIES3D GMD-Layer
+```python
+# Eurostat REST API — identisches Format für alle EU-Länder
+import requests
+url = "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/demo_pjan"
+params = {
+    "sex": "T",       # Total
+    "age": "TOTAL",
+    "geo": "DE",      # Beliebiger ISO-Code
+    "time": "2023",
+    "format": "JSON"
+}
+r = requests.get(url, params=params, timeout=60)
+# Gleiches Format für FR, ES, PL, ... — kein länderspezifischer Parsing-Code
 ```
 
+**NUTS-2 Regionsgrenzen (ersetzt swisstopo/BKG/BEV für ganz Europa):**
+
+```python
+import geopandas as gpd
+
+# Ein einziger URL für alle europäischen NUTS-2 Regionen
+NUTS_URL = "https://gisco-services.ec.europa.eu/distribution/v2/nuts/geojson/NUTS_RG_01M_2021_4326.geojson"
+gdf_nuts = gpd.read_file(NUTS_URL)
+
+# Nach Land filtern:
+gdf_land = gdf_nuts[(gdf_nuts['LEVL_CODE'] == 2) & (gdf_nuts['CNTR_CODE'] == 'DE')]
+# Projektion: WGS84 (EPSG:4326) — kein länderspezifisches CRS nötig
+```
+
+**Produktionsanlagen:** Kein einheitliches europäisches Register verfügbar.
+Einzige Ausnahme: ENTSO-E Installed Capacity per Production Type
+(`query_installed_generation_capacity`) gibt aggregierte MW je Technologie und
+Land — kein Standort, aber ausreichend für NB06 Panel 2 (Leistung nach Zone).
+
+### 6.4 Aufwandsmatrix Europa
+
+| Notebook | Europa-Aufwand | Blocker |
+|----------|---------------|---------|
+| NB01 Preise/Last | **0h** nach BZ/CC-Parametrisierung | — |
+| NB02 Analyse | **0h** | — |
+| NB03 Visualisierung | **½h** Labeling (Währung, Landname) | — |
+| NB04 Business Case | **0h** | — |
+| NB05 Strategie | **0h** | — |
+| NB06 Räumlich | **2–5 Tage** je Land | kein EU-Anlagenregister |
+| NB06 mit Eurostat | **1–2 Tage** für Bev. + Grenzen | Anlagen bleiben manuell |
+| NB07 Cross-Border | **½h** nachbarn_per_land ergänzen | — |
+| NB08–NB15 | **0h** (preisneutral) | — |
+| **Total (ohne NB06)** | **~1–2h** | — |
+| **Total (mit NB06 Eurostat)** | **~1–3 Tage** | Anlagen je Land |
+
+### 6.5 Nicht-generalisierbare Aspekte (Europa)
+
+- **Produktionsanlagen-Standorte** (NB06 Karte 2): Kein paneuropäisches Register.
+  Alternativen: OpenStreetMap `power=plant`-Tags (unvollständig), oder Karte 2
+  durch ENTSO-E-Kapazitätsdaten ersetzen (nur aggregiert, kein Standort).
+- **Tarif-Modell** (NB13): HT/NT-Strukturen stark länderspezifisch. NO/SE haben
+  Spotpreis-direkt-Tarife ohne HT/NT-Spreizung — NB13 würde anders parametrisiert.
+- **Währung UK** (GB): GBP → EUR-Umrechnung nötig. `eur_chf`-Pattern aus
+  `config.json` auf `fx_rates` erweitern.
+- **Datenlücken**: Balkanländer (RS, BG, GR) haben teilweise unvollständige
+  ENTSO-E-Daten — Fallback auf verfügbare Jahre nötig.
+- **Mehrfachzonen** (NO, SE, IT): Preis-Arbitrage zwischen Zonen möglich —
+  interessante Erweiterung, aber ausserhalb des aktuellen Modells.
+
 ---
 
-## 7. Bekannte Limitationen (bleiben bestehen)
+## 7. Empfohlene Umsetzungsreihenfolge
 
-- **Lastflüsse synthetisch:** Ohne DC-Solver (PyPSA) bleiben alle Flusswerte approximiert
-- **Produktionsanlagen Europa:** Kein paneuropäisches Standort-Register — ENTSO-E liefert nur aggregierte MW je Technologie und Land
-- **Mehrfachzonen:** NO/SE/IT haben mehrere Preiszonen — NB01 muss Zone auswählen oder aggregieren
-- **Saisonale Profilkurven:** Basieren auf BFE-CH-2023-Statistik — für DE/AT müssen andere CF-Faktoren aus nationalen Statistiken kalibriert werden
-- **Tarif-Modell NB13:** HT/NT-Spreizung und -Zeiten sind länderspezifisch
+**Stufe 1 — DACH (~1–2 Tage):**
+1. `config.json`: Land-Sektion + DACH-Optionen hinzufügen
+2. NB01: `BZ_CODE`/`CC_CODE` parametrisieren → sofort lauffähig für DE/AT
+3. NB07: `nachbarn_per_land` ergänzen
+4. NB06 DE: Geodaten (BKG) + MaStR-Anlagen
+
+**Stufe 2 — Europa Markt (~2–4h nach Stufe 1):**
+1. `config.json`: `entsoe_bidding_zones`-Tabelle + `eurostat`-Sektion ergänzen
+2. NB01: Keine Änderung nötig — läuft bereits mit beliebigem BZ_CODE
+3. NB07: `nachbarn_per_land` für gewünschte Länder ergänzen
+4. NB03/04/05: Labeling (Landname, ggf. Währungshinweis für UK)
+
+**Stufe 3 — Europa räumlich (~1–3 Tage je Land):**
+1. NB06: Eurostat NUTS-2 + `demo_pjan` für Bevölkerung einbauen
+2. NB06: Anlagen je Land einzeln (oder durch ENTSO-E-Kapazitätsdaten ersetzen)
+3. NB13: Tarif-Modell länderspezifisch parametrisieren
 
 ---
 
-*Erstellt: April 2026 | SC26_Gruppe_2 | Nicht Teil der Abgabe 11.05.2026*
+*Erstellt: März 2026 | SC26_Gruppe_2 | Potenzielle Erweiterung — kein Abgabe-Bestandteil*
+
+
+---
+
+## 8. Aktueller Stand (April 2026) — Änderungen gegenüber Konzept-Erstfassung
+
+### 8.1 PyPSA-Eur Zenodo als einzige Grid-Topologie-Quelle (K_01d)
+
+Die ursprünglich geplante Prioritätskette (earth-osm → Overpass → Zenodo → Baseline)
+wurde vereinfacht auf **PyPSA-Eur Zenodo als einzige Quelle**:
+
+- Download: ~5 MB (ganz Europa) statt 300 MB+ PBF pro Land
+- Enthält bereits r/x/b/s_nom (elektrische Parameter)
+- Gleicher Ablauf für alle ENTSO-E-Länder: nur `CC_CODE` ändern
+- Rohdaten (ganz Europa) werden einmalig gecacht → Länderwechsel ohne Re-Download
+
+```
+zenodo.org/records/14144752 → buses.csv + lines.csv (ganz Europa)
+    → Filter: country == CC_CODE
+    → Cache: experimental/data/intermediate/grid_zenodo/
+```
+
+### 8.2 Dateipfade: experimental/ isoliert von Produktion
+
+Alle experimentellen Notebooks schreiben ausschliesslich in lokale Unterordner:
+
+```
+experimental/
+├── data/
+│   ├── raw/              ← Rohdaten (kein Touch von ../../data/)
+│   └── intermediate/
+│       └── grid_zenodo/  ← PyPSA Zenodo Cache
+└── output/
+    └── charts/           ← GIFs + Charts (kein Touch von ../../output/)
+```
+
+Produktionsdaten werden nur gelesen (`PROD_DATA_DIR = '../../data/raw'`).
+
+### 8.3 Animationsverbesserungen (K_01c)
+
+- **20 Frames für 24h**: `TAG_TIMES = linspace(0, 24, 20)` → cubic-interpolierte Zwischenwerte
+- **20 Frames für 52 Wochen**: `JAHR_TIMES = linspace(0, 52, 20)` → cubic-interpoliert
+- **Richtungsberechnung**: Flow-Dots bewegen sich gleichmässig von frame 0→N (kein Speed-Heuristik mehr)
+- **CubicSpline**: `scipy.interpolate.CubicSpline` mit periodischen Randbedingungen
+
+### 8.4 Granularitäts-Schalter (alle experimentellen Notebooks)
+
+```python
+GRANULARITY = 'kantone'   # ⚙ 'kantone' / 'bezirke' / 'gemeinden' / 'nuts3'
+```
+
+Implementiert: `'kantone'` (Standard). Vorbereitet aber noch nicht implementiert:
+- `'bezirke'`: ~150 Bezirke, BFS PXWeb selbe API
+- `'gemeinden'`: ~2134 Gemeinden, BFS PXWeb + swissBOUNDARIES3D GMD-Layer
+- `'nuts3'`: Eurostat NUTS-3 (für internationale Vergleiche)
+
+*Aktualisiert: April 2026*

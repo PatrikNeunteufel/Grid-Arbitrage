@@ -220,7 +220,6 @@
       },
       "_hint_saison_colors": "SAISON_COLORS = _viz.get(\"saison_colors\", {}) in Setup-Zelle laden"
     },
-    "animation_dpi": 100,
     "_section_stil": "Gemeinsame Stilkonstanten — in Initialisierungszelle jedes chart-NB laden",
     "stil": {
       "_hint": "Alle chart-produzierenden NB laden diese Werte. Nur mit Begründung lokal abweichen.",
@@ -272,5 +271,20 @@
     "K_10": true,
     "K_99": true
   },
-  "_struktur": "Ordner: organisation/ | notebooks/ (Pflicht NB00–NB04) | kuer/ (K_00–K_10, K_99)"
+  "_struktur": "Ordner: organisation/ | notebooks/ (Pflicht NB00–NB04) | kuer/ (K_00–K_10, K_99)",
+  "animation": {
+    "_hint": "GIF-Animationsparameter — SSOT für K_01, K_04 und experimentelle Notebooks. Experimentelle Notebooks (K_01c/d) können lokal abweichen.",
+    "dpi": 110,
+    "_hint_dpi": "DPI für GIF-Frames (Chart: 110, Karte: 130). Ersetzt visualisierung.animation_dpi.",
+    "frames_per_hour": 4,
+    "_hint_fph": "K_01 Tagesverlauf: 24h × 4 = 96 Frames. Cubic-interpoliert.",
+    "frames_per_week": 4,
+    "_hint_fpw": "K_04 Saisonverlauf: 52W × 4 = 208 Frames. Cubic-interpoliert.",
+    "fps_chart": 10,
+    "_hint_fps_chart": "fps Chart-GIFs (K_04) → 208/10 = 20.8s Loop",
+    "fps_karte": 10,
+    "_hint_fps_karte": "fps Karten-GIFs (K_01) → 96/10 = 9.6s Loop",
+    "einzelbilder": true,
+    "_hint_einzelbilder": "true = Einzelframes als PNG in <gif_name>_frames/ Unterordner speichern"
+  }
 }

@@ -2,42 +2,42 @@
   "datenzeitraum": {
     "start_date": "2023",
     "end_date": "2026",
-    "n_years": 3.295
+    "n_years": 3.298
   },
   "simulation": {
-    "spread_mean_eur_mwh": 24.39,
+    "spread_mean_eur_mwh": 24.51,
     "spread_p25_mean": 18.52,
     "spread_p75_mean": 26.52,
-    "neg_price_hours_per_year": 17.4,
-    "n_years_sim": 3.295,
+    "neg_price_hours_per_year": 17.5,
+    "n_years_sim": 3.298,
     "wirtschaftlichkeit": {
       "Privat_10kWh": {
-        "roi_pct": 1.74,
-        "net_annual": 69.8,
-        "annual_rev": 129.8,
+        "roi_pct": 1.75,
+        "net_annual": 70.0,
+        "annual_rev": 130.0,
         "capex": 4000.0,
-        "payback_years": 57.3
+        "payback_years": 57.2
       },
       "Gewerbe_100kWh": {
-        "roi_pct": 3.07,
-        "net_annual": 922.2,
-        "annual_rev": 1372.2,
+        "roi_pct": 3.08,
+        "net_annual": 924.2,
+        "annual_rev": 1374.2,
         "capex": 30000.0,
         "payback_years": 32.5
       },
       "Industrie_1MWh": {
-        "roi_pct": 4.49,
-        "net_annual": 9873.6,
-        "annual_rev": 13173.6,
+        "roi_pct": 4.5,
+        "net_annual": 9895.4,
+        "annual_rev": 13195.4,
         "capex": 220000.0,
-        "payback_years": 22.3
+        "payback_years": 22.2
       },
       "Utility_10MWh": {
         "roi_pct": 2.9,
-        "net_annual": 52113.0,
-        "annual_rev": 79113.0,
+        "net_annual": 52261.3,
+        "annual_rev": 79261.3,
         "capex": 1800000.0,
-        "payback_years": 34.5
+        "payback_years": 34.4
       }
     }
   },
@@ -58,21 +58,21 @@
     "payback_kombi_j": 11.6
   },
   "hybrid_simulation": {
-    "n_years_sim": 3.295,
+    "n_years_sim": 3.298,
     "ev_frac_static": 0.7,
     "ergebnisse": {
       "Privat_10kWh": {
-        "roi_arb": 1.74,
+        "roi_arb": 1.75,
         "roi_ev": 1.19,
         "roi_hyb": 2.3,
         "roi_hybo": 2.22,
-        "be_arb": 57.3,
+        "be_arb": 57.2,
         "be_ev": 83.9,
         "be_hyb": 43.6,
         "be_hybo": 45.0
       },
       "Gewerbe_100kWh": {
-        "roi_arb": 3.07,
+        "roi_arb": 3.08,
         "roi_ev": -0.22,
         "roi_hyb": 1.34,
         "roi_hybo": 1.2,
@@ -82,11 +82,11 @@
         "be_hybo": 83.3
       },
       "Industrie_1MWh": {
-        "roi_arb": 4.49,
+        "roi_arb": 4.5,
         "roi_ev": -0.87,
         "roi_hyb": 1.15,
         "roi_hybo": 0.97,
-        "be_arb": 22.3,
+        "be_arb": 22.2,
         "be_ev": 999,
         "be_hyb": 86.9,
         "be_hybo": 103.2
@@ -94,9 +94,9 @@
       "Utility_10MWh": {
         "roi_arb": 2.9,
         "roi_ev": -1.22,
-        "roi_hyb": 1.25,
+        "roi_hyb": 1.26,
         "roi_hybo": 1.03,
-        "be_arb": 34.5,
+        "be_arb": 34.4,
         "be_ev": 999,
         "be_hyb": 79.7,
         "be_hybo": 97.5
@@ -105,29 +105,29 @@
   },
   "dispatch_optimierung": {
     "Privat_10kWh": {
-      "r_year_eur": 129.8,
-      "d_year_eur": 129.8,
+      "r_year_eur": 130.0,
+      "d_year_eur": 130.0,
       "delta_pct": 0.0,
       "roi_reaktiv_pct": 1.75,
       "roi_da_optimal_pct": 1.75
     },
     "Gewerbe_100kWh": {
-      "r_year_eur": 1372.2,
-      "d_year_eur": 1372.2,
+      "r_year_eur": 1374.2,
+      "d_year_eur": 1374.2,
       "delta_pct": 0.0,
-      "roi_reaktiv_pct": 3.07,
-      "roi_da_optimal_pct": 3.07
+      "roi_reaktiv_pct": 3.08,
+      "roi_da_optimal_pct": 3.08
     },
     "Industrie_1MWh": {
-      "r_year_eur": 13173.6,
-      "d_year_eur": 13173.6,
+      "r_year_eur": 13195.4,
+      "d_year_eur": 13195.4,
       "delta_pct": 0.0,
-      "roi_reaktiv_pct": 4.49,
-      "roi_da_optimal_pct": 4.49
+      "roi_reaktiv_pct": 4.5,
+      "roi_da_optimal_pct": 4.5
     },
     "Utility_10MWh": {
-      "r_year_eur": 79113.0,
-      "d_year_eur": 79113.0,
+      "r_year_eur": 79261.3,
+      "d_year_eur": 79261.3,
       "delta_pct": 0.0,
       "roi_reaktiv_pct": 2.9,
       "roi_da_optimal_pct": 2.9
