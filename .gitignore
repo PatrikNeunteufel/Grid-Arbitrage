@@ -2,6 +2,7 @@
 .vs/
 **/.ipynb_checkpoints/
 data/
+experimental/output/charts/*frames/
 # Temporäre Dateien
 *.tmp
 *.log
