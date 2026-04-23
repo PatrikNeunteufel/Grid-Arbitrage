@@ -273,7 +273,7 @@
   },
   "_struktur": "Ordner: organisation/ | notebooks/ (Pflicht NB00–NB04) | kuer/ (K_00–K_10, K_99)",
   "animation": {
-    "_hint": "GIF-Animationsparameter — SSOT für K_01, K_04 und experimentelle Notebooks. Experimentelle Notebooks (K_01c/d) können lokal abweichen.",
+    "_hint": "GIF/Chart-Parameter — SSOT für K_01, K_04 und experimentelle Notebooks. modus/modus_statisch/overrides steuern das Rebuild-Verhalten (siehe lib.plotting.should_skip).",
     "dpi": 110,
     "_hint_dpi": "DPI für GIF-Frames (Chart: 110, Karte: 130). Ersetzt visualisierung.animation_dpi.",
     "frames_per_hour": 4,
@@ -285,6 +285,13 @@
     "fps_karte": 10,
     "_hint_fps_karte": "fps Karten-GIFs (K_01) → 96/10 = 9.6s Loop",
     "einzelbilder": true,
-    "_hint_einzelbilder": "true = Einzelframes als PNG in <gif_name>_frames/ Unterordner speichern"
+    "_hint_einzelbilder": "true = Einzelframes als PNG in <gif_name>_frames/ Unterordner speichern",
+    "modus": "skip_if_exists",
+    "_hint_modus": "GIF-Rebuild-Verhalten. Erlaubte Werte: 'skip_if_exists' (überspringen wenn Datei existiert), 'always' (immer neu rendern), 'force_rebuild' (Alias für 'always').",
+    "modus_statisch": "always",
+    "_hint_modus_statisch": "Verhalten für statische Charts (PNG/JPG). 'always' (Default) rendert immer neu. 'skip_if_exists_all' ist ein Master-Schalter, der alle statischen Charts auf 'skip_if_exists' umstellt — nützlich für schnelles run_all nach kleinen Code-Änderungen.",
+    "overrides": {
+      "_hint": "Pro-Chart-Override. Key ist der Basename des Artefakts ohne Extension (z.B. 'kuer_k04_anim_A_52wochen'). Value: 'skip_if_exists' | 'always' | 'force_rebuild'. Höchste Priorität über modus/modus_statisch."
+    }
   }
 }
