@@ -327,3 +327,157 @@ def should_skip(
         return os.path.exists(out_path) and os.path.getsize(out_path) > 0
     # 'always' oder 'force_rebuild' → immer neu erzeugen
     return False
+
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# make_gif_chart — PIL-basierter GIF-Builder (aus K_01/K_04 extrahiert)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def make_gif_chart(fig, update_fn, frames, fps, path,
+                   dpi=None, save_frames=None, cfg=None):
+    """PIL-basierter GIF-Builder für animierte Charts.
+
+    Für jeden Frame-Wert wird ``update_fn(frame_val)`` aufgerufen, das Figure
+    in PNG gerendert und in die Frame-Liste aufgenommen. Am Ende werden die
+    Frames als animiertes GIF gespeichert (``loop=0``).
+
+    Parameter
+    ---------
+    fig : matplotlib.figure.Figure
+        Die Figure, die für jeden Frame neu gerendert wird. ``update_fn`` muss
+        in-place die Axes-Elemente dieser Figure aktualisieren.
+    update_fn : callable
+        Funktion ``update_fn(frame_val)``, aktualisiert die dynamischen
+        Chart-Elemente für den aktuellen Frame-Wert.
+    frames : Iterable
+        Sequenz der Frame-Werte (z.B. ``HOUR_TIMES`` für Tagesanimation oder
+        ``WEEK_TIMES`` für Jahresanimation).
+    fps : int
+        Frames pro Sekunde im Output-GIF.
+    path : str
+        Zieldatei (``.gif``). Bei ``save_frames=True`` werden die Einzelframes
+        zusätzlich in ``<path_ohne_ext>_frames/frame_NNNN.png`` gespeichert.
+    dpi : int, optional
+        DPI beim Rendering. Default: ``cfg['animation']['dpi']`` (wenn cfg
+        gegeben), sonst 110.
+    save_frames : bool, optional
+        Einzelframes zusätzlich als PNG speichern. Default:
+        ``cfg['animation']['einzelbilder']`` (wenn cfg gegeben), sonst False.
+    cfg : dict, optional
+        Geladenes ``sync/config.json``. Wenn gegeben:
+          * Skip-Check via :func:`should_skip` (liest ``animation.modus`` und
+            ``animation.overrides``)
+          * dpi/save_frames-Defaults aus ``animation.dpi`` / ``animation.einzelbilder``
+
+    Return
+    ------
+    None. Bei ``skip_if_exists`` + existierender Datei: return ohne Rendering.
+    """
+    import io as _io
+    from PIL import Image as _PILImage
+
+    # Skip-Check: wenn cfg gegeben und should_skip True → nichts tun
+    if cfg is not None:
+        _name = os.path.basename(path).rsplit('.', 1)[0]
+        if should_skip(path, 'animation', _name, cfg):
+            print(f'⏭️  {_name} übersprungen (existiert)')
+            return
+
+    # Defaults aus cfg oder Fallbacks
+    if cfg is not None:
+        _dpi    = dpi        if dpi        is not None else cfg.get('animation', {}).get('dpi', 110)
+        _einzel = save_frames if save_frames is not None else cfg.get('animation', {}).get('einzelbilder', False)
+    else:
+        _dpi    = dpi        if dpi        is not None else 110
+        _einzel = save_frames if save_frames is not None else False
+
+    frame_dir = path.replace('.gif', '_frames')
+    if _einzel:
+        os.makedirs(frame_dir, exist_ok=True)
+
+    # Frame-Loop
+    frames_pil = []
+    for i, frame_val in enumerate(frames):
+        update_fn(frame_val)
+        buf = _io.BytesIO()
+        fig.savefig(buf, format='png', dpi=_dpi,
+                    bbox_inches='tight', facecolor=fig.get_facecolor())
+        buf.seek(0)
+        img = _PILImage.open(buf).convert('RGB').copy()
+        if _einzel:
+            img.save(os.path.join(frame_dir, f'frame_{i:04d}.png'), optimize=True)
+        frames_pil.append(img)
+
+    if not frames_pil:
+        print('⚠️  Keine Frames')
+        return
+
+    frames_pil[0].save(path, save_all=True, append_images=frames_pil[1:],
+                       duration=int(1000 / fps), loop=0, optimize=True)
+    n  = len(frames_pil)
+    kb = os.path.getsize(path) // 1024
+    print(f'✅ {os.path.basename(path)} ({n}f @{fps}fps={n/fps:.1f}s | {kb} KB)')
+    if _einzel:
+        print(f'   Frames: {frame_dir}/')
+
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# show_chart — Chart-Anzeige im Notebook (aus K_00 / NB00 extrahiert)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def show_chart(filename, caption='', width=950, charts_dir=None, as_html=None):
+    """Zeigt einen erzeugten Chart (PNG, JPG, GIF) aus einem Charts-Verzeichnis.
+
+    Der Renderer wird automatisch nach Dateiendung gewählt:
+      * .gif  → HTML ``<img>``-Tag (animierte GIFs)
+      * sonst → ``IPython.display.Image``
+
+    Parameter
+    ---------
+    filename : str
+        Dateiname der Chart-Datei (nur Name, Pfad wird ergänzt).
+    caption : str, optional
+        Text, der nach dem Bild ausgegeben wird.
+    width : int, default 950
+        Anzeige-Breite in Pixel.
+    charts_dir : str, optional
+        Charts-Verzeichnis. Wenn ``None``, wird im Caller-Scope die globale
+        Variable ``CHARTS_DIR`` gesucht (Rückwärtskompatibilität).
+    as_html : bool, optional
+        Erzwingt HTML (``<img>``-Tag, für animierte GIFs) oder ``Image``
+        (statisch). Bei ``None`` wird aus der Dateiendung abgeleitet
+        (``.gif`` → HTML).
+
+    Return
+    ------
+    None. Gibt Fehlermeldung auf stdout aus wenn die Datei fehlt.
+    """
+    from IPython.display import Image, HTML, display
+
+    # charts_dir auflösen
+    if charts_dir is None:
+        import inspect
+        caller_globals = inspect.stack()[1].frame.f_globals
+        charts_dir = caller_globals.get('CHARTS_DIR')
+        if charts_dir is None:
+            print('⚠️  show_chart: weder charts_dir übergeben noch CHARTS_DIR im Scope')
+            return
+
+    path = os.path.join(charts_dir, filename)
+    if not os.path.exists(path):
+        print(f'❌  Nicht vorhanden: {path}')
+        return
+
+    # Renderer wählen
+    if as_html is None:
+        as_html = filename.lower().endswith('.gif')
+
+    if as_html:
+        display(HTML(f'<img src="{path}" width="{width}">'))
+    else:
+        display(Image(filename=path, width=width))
+
+    if caption:
+        print(f'\n{caption}\n')
