@@ -20,7 +20,7 @@ einige Phasen in Sub-Phasen aufgeteilt — dokumentiert im folgenden Überblick.
 | 3c | O_04 TOC-Reposition + Einleitung | ✅ |
 | 3d | Struktur-Harmonisierung experimental/ + K_01d-Slider-Übernahme | ✅ |
 | 3e | TOC-Retrofit für 6 verbliebene NBs (00, O_00–O_03, O_99) | ✅ |
-| 4a | `animation`-Schalter in `config.json` | ✅ |
+| 4a | `animation`-Schalter in `config.json` (modus/modus_statisch/overrides) | ✅ |
 | 4b | Patterns-Dokumentation (ohne NB-Einbau) | ✅ |
 | 4c | Skip-Check zentral in `make_gif_*`-Helper-Funktionen | ✅ |
 | 4d | `show_source(should_skip)` vor erster Verwendung | ✅ |
@@ -42,32 +42,9 @@ einige Phasen in Sub-Phasen aufgeteilt — dokumentiert im folgenden Überblick.
 | K_01d Fix | CSV-Quoting (einfache Quotes bei Zenodo v0.6) | ✅ |
 | K_01d Fix | Raw/Intermediate-Trennung + log_dataindex integriert | ✅ |
 | K_01d Fix | TOC → Inhaltsverzeichnis Links nachgezogen | ✅ |
-| 7 | `load_kantone` nach `lib/grid_topo.py` (K_01, K_01c, K_01d migriert) | ✅ |
-| **8** | **Dokumentation-Update (O_01, Review-Protokoll, `Notebook_Dokumentation.md`)** | **← aktueller Punkt** |
+| **7** | **`lib/grid_topo.py` Konsolidierung (K_01d-Topologie-Helpers)** | **← aktueller Punkt** |
+| 8 | Dokumentation-Update (O_01, Review-Protokoll, `Notebook_Dokumentation.md`) | offen |
 | 9 | Regressionstest (run_all) | offen |
-
-## Phase 7 — `lib/grid_topo.py` mit `load_kantone`
-
-**Inspektion** (korrigiert nach zu-enger Erstsuche) ergab: 3 NBs haben
-Kantone-Lade-Logik als Duplikat:
-
-- **K_01 Cell 49:** ~80 Zeilen inline-Code (KANT_CANDIDATES, Download-Fallback, Strategie-Logik)
-- **K_01c Cell 13:** ~40 Zeilen inline-Code
-- **K_01d Cell 8/15:** 2× `def load_kantone` mit identischer Semantik
-
-**Lösung:** `lib/grid_topo.py` mit einer universellen `load_kantone()`-Funktion,
-die alle 3 Use-Cases abdeckt (Cache-Varianten, optionaler Download, 3 Kürzel-
-Detektions-Strategien). Plus Modul-Konstanten `KANT_NUM_TO_ABK` und `KANT_ABK_SET`.
-
-**Migration:**
-- K_01: 6530 chars inline → ~1000 chars via lib
-- K_01c: 2084 chars inline → ~450 chars via lib
-- K_01d: 2 lokale defs entfernt, 3 Aufrufe auf neue Signatur umgestellt
-
-**Nicht migriert (bewusst NB-lokal):**
-- `load_pypsa_zenodo` (172 Zeilen, K_01d-spezifisch mit vielen globalen Konstanten)
-- `in_bbox`, `clean_name`, `get_border_flows`, `compute_edge_flows` (zu klein oder zu kontextspezifisch)
-- `cluster_plants` in K_01c (nicht dupliziert)
 
 ## Kanonisches Notebook-Schema (Ergebnis Phase 3 + 6.2d)
 
@@ -131,12 +108,13 @@ from lib.io_ops         import log_dataindex, load_transfer, save_transfer, \
 from lib.data_fetchers  import fetch_entsoe_yearly
 from lib.simulation     import simulate_battery_dispatch
 from lib.columns        import find_col
-from lib.grid_topo      import load_kantone
 
 print(f'lib-Pfad aktiv: {_PROJECT_ROOT}/lib')
 ```
 
-Je nach NB werden nur die benötigten Funktionen importiert.
+Je nach NB werden nur die benötigten Funktionen importiert (z.B. keine
+`fetch_entsoe_yearly`-Zeile in NBs ohne ENTSO-E-Download, keine
+`simulate_battery_dispatch`-Zeile in NBs ohne Dispatch-Sim).
 
 **Konvention:** Wenn eine weitere `lib.xxx.fn` in einem NB zum ersten Mal
 genutzt wird, direkt davor ein 2-Zellen-Block einfügen:
@@ -152,22 +130,40 @@ im Notebook verwendet. Aufklappbar darunter ist der Quellcode einsehbar.
 show_source(<fn>)
 ```
 
+Bei mehreren lib-Funktionen können Blocks konsolidiert werden (siehe Phase 6.1
+für `should_skip` + `make_gif_chart` zusammen).
+
 ## Daten-Konventionen (Ergebnis K_01d-Fix)
 
 **Gilt projektweit — Pflicht, Kür UND experimental:**
 
-- **Rohdaten von externen Quellen** → `<scope>/data/raw/<quelle>/`
-- **Abgeleitete Zwischenergebnisse** → `<scope>/data/intermediate/`
-- **Finale Outputs** → `<scope>/data/processed/`
-- **Jeder Datei-Write** wird via `log_dataindex()` im `sync/dataindex.csv`
-  protokolliert
-- **Charts (PNG, GIF)** werden NICHT geloggt — das Protokoll ist für Daten
+- **Rohdaten von externen Quellen** (ENTSO-E, BFE, Zenodo, OSM, …)
+  → `<scope>/data/raw/<quelle>/`
+  - Beispiele: `data/raw/ch_spot_prices_raw.csv`,
+    `experimental/data/raw/zenodo/buses.csv`
 
-Provenienz-Kette: `data_type='raw'` referenziert die externe URL;
-`data_type='intermediate'` referenziert den Raw-Pfad — so entsteht eine
-nachvollziehbare Kette bis zur Original-Quelle.
+- **Abgeleitete Zwischenergebnisse** (gefiltert, normalisiert, angereichert)
+  → `<scope>/data/intermediate/`
+  - Beispiele: `data/intermediate/spread_zeitreihe.csv`,
+    `experimental/data/intermediate/grid_zenodo/CH_pypsa_buses.csv`
 
-## lib/-Struktur (Final — Phase 6+7 abgeschlossen)
+- **Finale Outputs** (fertig für weitere Analyse/Visualisierung)
+  → `<scope>/data/processed/`
+
+- **Jeder Datei-Write** wird via `log_dataindex()` im projektweiten
+  `sync/dataindex.csv` protokolliert:
+  ```python
+  log_dataindex(filename, source_url, local_path, data_type='raw|intermediate|processed',
+                rows=..., size_kb=..., note=..., dataindex_path=DATAINDEX)
+  ```
+  `data_type='raw'` referenziert die externe URL als `source_url`;
+  `data_type='intermediate'` referenziert den Raw-Pfad — so entsteht eine
+  nachvollziehbare Provenienz-Kette bis zur Original-Quelle.
+
+- **Charts (PNG, GIF)** werden NICHT in `dataindex.csv` geloggt — das
+  Protokoll ist für Daten, nicht für Visualisierungen.
+
+## lib/-Struktur (Stand nach Phase 6 — abgeschlossen)
 
 ```
 lib/
@@ -182,13 +178,8 @@ lib/
 ├── data_fetchers.py     ✅  fetch_entsoe_yearly                       (Phase 6.3)
 ├── simulation.py        ✅  simulate_battery_dispatch                 (Phase 6.4)
 ├── columns.py           ✅  find_col                                  (Phase 6.5)
-└── grid_topo.py         ✅  load_kantone, KANT_NUM_TO_ABK,            (Phase 7)
-                               KANT_ABK_SET
+└── grid_topo.py         ⏳  K_01d OSM-/Topologie-Helpers              (Phase 7)
 ```
-
-Bewusst NICHT in `grid_topo.py` (sind NB-lokal): `load_pypsa_zenodo`,
-`in_bbox`, `clean_name`, `compute_edge_flows`, `get_border_flows`,
-`cluster_plants`. Begründung siehe Phase-7-README.
 
 ## Transfer-Pipeline (Ergebnis 6.2b/c)
 
@@ -208,37 +199,55 @@ Leser:
 ```
 
 **Benutzung via lib-Helper:**
+
 ```python
+# Lesen
 TF = load_transfer()                      # komplettes Dict
 dt = load_transfer(key='datenzeitraum')   # ein Teilbaum
+
+# Schreiben (mit automatischem Merge — andere Keys bleiben erhalten)
 save_transfer({'n_years': 3.3, ...}, key='datenzeitraum')
 ```
 
-## Phase 8 — Dokumentation (nächster Schritt)
+## Phase 7 — `lib/grid_topo.py` (nächster Schritt)
+
+Dedicated Modul für die OSM-/Netzwerk-Topologie-Logik aus K_01d. Nach
+Inspektion sind folgende Helper-Kandidaten in K_01d aktuell lokal definiert:
+
+- `load_pypsa_zenodo` (Zenodo-Loader mit Caching, CSV-Quoting, log_dataindex)
+- `load_kantone` (swisstopo-Geo-Loader, 2× dupliziert in K_01d)
+- `in_bbox` (Koordinaten-Filter auf CH-Bounding-Box)
+- `clean_name` (Normalisierung OSM-IDs/Namen)
+- `compute_edge_flows` (Leitungs-Flow-Berechnung aus Zonenbilanzen)
+- `get_border_flows` (Grenzflüsse aus CH-Saldo)
+
+**Inspektions-Ziel vor der Migration:** Welche davon sind auch in K_01b/c
+dupliziert (Koordinaten-Filter in mehreren NBs?) oder in K_01. Wenn Single-Use,
+dann gelten sie als NB-lokal und kommen nicht in lib.
+
+## Phase 8 — Dokumentation
 
 - **`organisation/O_01_Project_Overview.ipynb`**: §5 Notebook-Map auf den
-  aktuellen Stand bringen — lib/-Module erwähnen, neue experimental/-Struktur
+  aktuellen Stand bringen (lib/ erwähnen, neue experimental/-Struktur)
 - **`organisation/O_04_Review_Protokoll.ipynb`**: §2 Korrektur-Iterationen
-  um die während des Refactorings entstandenen Einträge ergänzen:
-  - Shadow-Bug-Fix aus Phase 6.2d (`_sim` Doppelzuweisung)
-  - K_01d-Fixes (CSV-Quoting + Raw/Intermediate + TOC-Links)
-  - Phase 6.4 numerische Verifikation (bit-identisch verified)
-  - Phase 6.4b tote-Code-Entfernung (`sim_arbitrage`)
-  - Phase 7 `load_kantone`-Dedup
-- **`Notebook_Dokumentation.md`** am Projekt-Root: komplette Überarbeitung —
-  alle lib/-Module dokumentieren, neue Bootstrap-Konventionen erklären,
-  K_01d-Daten-Konventionen dokumentieren
+  um die während des Refactorings entstandenen Einträge ergänzen
+  — speziell auch den Shadow-Bug-Fix aus Phase 6.2d
+  — K_01d-Fixes (CSV-Quoting + Raw/Intermediate)
+  — Phase 6.4b tote-Code-Entfernung (sim_arbitrage)
+- **`Notebook_Dokumentation.md`** am Projekt-Root: komplette Überarbeitung,
+  entspricht jetzt nicht mehr der Realität. Muss lib/-Module erwähnen.
 
 ## Phase 9 — Regressionstest
 
-Nach Abschluss Phase 8 einmal `run_all.sh` durchlaufen lassen:
+Nach Abschluss Phase 6-8 einmal `run_all.sh` durchlaufen lassen:
 - Alle GIFs neu rendern (`modus: "always"`)
 - Alle statischen Charts neu rendern
-- Dataindex-Zählung muss stabil bleiben
+- Dataindex-Zählung: muss mit dem Stand vor Refactoring übereinstimmen
+  (oder dokumentierte Differenzen vorweisen)
 - Alle NBs laufen ohne Fehler durch (Cell-Execution-Reihenfolge)
 - transfer.json-Inhalt nach run_all vergleichen mit Vor-Refactoring-Stand
-- Kern-Kennzahlen (ROI arb/ev/hyb) müssen stabil bleiben (Phase 6.4
-  numerische Verifikation war bit-identisch)
+- Kern-Kennzahlen (ROI arb/ev/hyb) müssen stabil bleiben (siehe
+  Phase 6.4 — numerische Verifikation war bit-identisch mit Mock-Daten)
 
 ## Kür-Freeze
 
@@ -248,8 +257,8 @@ Neue Ideen werden nur noch in `O_01_Project_Overview.ipynb` §13
 
 ## Prinzipien aus dem Refactoring (Lessons learned)
 
-Während der Phase-6-Umsetzung und auch Phase 7 sind einige Prinzipien
-herausgekristallisiert, die auch für künftige Wartung gelten:
+Während der Phase-6-Umsetzung sind einige Prinzipien herausgekristallisiert,
+die auch für Phase 7 und künftige Wartung gelten:
 
 1. **Inspektion immer gegen volle Baseline (`verified_3a`)**, nicht gegen
    einen engeren Phase-Output. Zu-enger-Scope ist der häufigste Fehler.
@@ -257,27 +266,21 @@ herausgekristallisiert, die auch für künftige Wartung gelten:
    Anzahlen melden. `plt.show()` sah aus wie ein Aufruf von `show` —
    Kontext-Ausgabe hätte den Fehler sofort gezeigt.
 3. **Numerische Verifikation für hoch-Risiko-Patches** — bit-identisch
-   (`diff == 0`), nicht `isclose`.
+   (`diff == 0`), nicht `isclose`. Gilt für jede Sim- oder Rechnungs-Fn.
 4. **User-Stand ist die Baseline** bei bereits editierten Files (K_01d
    hat User-TOC-Fixes, die erhalten bleiben müssen).
 5. **Eine Zelle, eine Sache** — separate Zellen statt Misch-Zellen. Die
-   Pflege wird dramatisch einfacher, und Shadow-Bugs fallen sofort auf.
+   Pflege wird dramatisch einfacher, und Shadow-Bugs (`_sim = CFG...` +
+   später `_sim = TF...`) fallen sofort auf.
 6. **Pattern-Abweichungen = Red Flag** → vereinheitlichen, nicht als
-   "individueller Stil" akzeptieren.
-7. **Inspektions-Pattern breit genug wählen** — nicht nur `def fn_name`,
-   sondern auch charakteristische Konstanten/Imports/Spalten suchen.
-   Beispiel: Für Kantone-Lader ist `KANT_NUM_TO_ABK` oder `kantone.gpkg`
-   ein verlässlicherer Indikator als `def load_kantone`, weil der Code
-   auch inline existieren kann. Zu enge Pattern führten zweimal zu
-   falschen Scope-Schlussfolgerungen (log_dataindex-Nachzug, grid_topo
-   erste Analyse).
+   "individueller Stil" akzeptieren. Konsistenz macht Reviews leichter.
 
-## Abgabe-Checkliste
+## Abgabe-Checkliste (grob)
 
 Vor der Moodle-Abgabe am 11. Mai 2026:
 
 - [x] Phase 6 abgeschlossen (Lib-Migration)
-- [x] Phase 7 abgeschlossen (lib/grid_topo.py — load_kantone)
+- [ ] Phase 7 abgeschlossen (grid_topo)
 - [ ] Phase 8 abgeschlossen (Doku-Update)
 - [ ] Phase 9 abgeschlossen (frischer Regressionslauf)
 - [ ] `sync/config.json` `modus: "skip_if_exists"` (Default für Reviewer)
@@ -287,11 +290,10 @@ Vor der Moodle-Abgabe am 11. Mai 2026:
 - [ ] `K_01d_Grid_Topologie_slider.ipynb` am Projekt-Root **gelöscht**
       (obsolet seit Phase 3d)
 - [ ] CS/SE-Review im `O_04_Review_Protokoll` eingetragen
-- [ ] Shadow-Bug-Fix (Phase 6.2d) im Review-Protokoll dokumentiert
+- [ ] Shadow-Bug-Fix (Phase 6.2d) im Review-Protokoll als A-09 o.ä. dokumentiert
 - [ ] K_01d-Fixes (CSV-Quoting + Raw/Intermediate + TOC-Links) im
       Review-Protokoll dokumentiert
-- [ ] Phase 6.4 numerische Verifikation dokumentiert
+- [ ] Phase 6.4 numerische Verifikation dokumentiert (bit-identisch verified)
 - [ ] Phase 6.4b tote-Code-Entfernung (sim_arbitrage) dokumentiert
-- [ ] Phase 7 `load_kantone`-Migration nach lib/grid_topo.py dokumentiert
 - [ ] Abgabe-ZIP enthält: notebooks/, kuer/, experimental/, organisation/,
       sync/, lib/, data/, output/, run_all.*, README.md, .gitattributes
