@@ -16,28 +16,92 @@
         "net_annual": 71.4,
         "annual_rev": 131.4,
         "capex": 4000.0,
-        "payback_years": 56.0
+        "payback_years": 56.0,
+        "rev_per_kwh_per_year": 13.14,
+        "net_lifetime_keur": 0.9,
+        "rueckfluss_pct": 21.4
       },
       "Gewerbe_100kWh": {
         "roi_pct": 3.13,
         "net_annual": 938.5,
         "annual_rev": 1388.5,
         "capex": 30000.0,
-        "payback_years": 32.0
+        "payback_years": 32.0,
+        "rev_per_kwh_per_year": 13.89,
+        "net_lifetime_keur": 11.3,
+        "rueckfluss_pct": 37.5
       },
       "Industrie_1MWh": {
         "roi_pct": 4.56,
         "net_annual": 10037.3,
         "annual_rev": 13337.3,
         "capex": 220000.0,
-        "payback_years": 21.9
+        "payback_years": 21.9,
+        "rev_per_kwh_per_year": 13.34,
+        "net_lifetime_keur": 120.4,
+        "rueckfluss_pct": 54.7
       },
       "Utility_10MWh": {
         "roi_pct": 2.95,
         "net_annual": 53107.2,
         "annual_rev": 80107.2,
         "capex": 1800000.0,
-        "payback_years": 33.9
+        "payback_years": 33.9,
+        "rev_per_kwh_per_year": 8.01,
+        "net_lifetime_keur": 637.3,
+        "rueckfluss_pct": 35.4
+      }
+    },
+    "netzentlastung": {
+      "Status Quo (2024)": {
+        "reduktion_pct": 0.0,
+        "entlastung_mw": 0.0
+      },
+      "Moderat (2027)": {
+        "reduktion_pct": 1.33,
+        "entlastung_mw": 140.0
+      },
+      "Ambitioniert (2030)": {
+        "reduktion_pct": 5.33,
+        "entlastung_mw": 560.0
+      },
+      "Transformativ (2035)": {
+        "reduktion_pct": 20.19,
+        "entlastung_mw": 2120.0
+      }
+    },
+    "saisonal": {
+      "Winter": {
+        "spread_max_min_eur_mwh": 49.0,
+        "monatserloese": {
+          "Dez": 20.8,
+          "Jan": 20.3,
+          "Feb": 19.7
+        }
+      },
+      "Frühling": {
+        "spread_max_min_eur_mwh": 83.7,
+        "monatserloese": {
+          "Mär": 18.6,
+          "Apr": 37.0,
+          "Mai": 38.0
+        }
+      },
+      "Sommer": {
+        "spread_max_min_eur_mwh": 75.1,
+        "monatserloese": {
+          "Jun": 34.5,
+          "Jul": 21.6,
+          "Aug": 25.5
+        }
+      },
+      "Herbst": {
+        "spread_max_min_eur_mwh": 69.9,
+        "monatserloese": {
+          "Sep": 21.4,
+          "Okt": 26.5,
+          "Nov": 22.0
+        }
       }
     }
   },

@@ -320,3 +320,195 @@ def log_missing(source, reason, data_folder='../data', dataindex_path=None):
                   status='error', note=reason,
                   dataindex_path=dataindex_path)
     print(f'  missing.txt: {reason}')
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Notebook-Abschluss-Helfer — final_check + pipeline_overview
+# ═══════════════════════════════════════════════════════════════════════════════
+#
+# Standardisierte End-of-Notebook-Kontrollen. Ersetzen die manuell duplizierten
+# Abschluss-Code-Blöcke in NB00-NB04 und sind für Kür-NBs wiederverwendbar.
+#
+#   final_check       — Output-Validierung pro NB (Existenz + Mindestgrösse)
+#   pipeline_overview — Mehr-Sektionen-Übersicht mit dir_listing-Modus (NB00)
+
+
+def _format_size(size_bytes):
+    """Formatiert Dateigrösse in KB oder MB (Schwelle 1024 KB)."""
+    kb = size_bytes / 1024
+    if kb < 1024:
+        return f'{kb:>7.1f} KB'
+    return f'{kb / 1024:>7.1f} MB'
+
+
+def final_check(nb_label, files=None, *, weiter_msg=None, fehler_msg=None,
+                extras=None, show_dataindex=False,
+                dataindex_path='../sync/dataindex.csv', width=60):
+    """Standardisierte End-of-Notebook-Kontrolle für Pflicht- und Kür-NBs.
+
+    Prüft Existenz und Mindestgrösse der angegebenen Output-Dateien,
+    gibt formatiertes Resultat aus und liefert ``all_ok`` als Bool zurück.
+
+    Parameter
+    ---------
+    nb_label : str
+        Label des Notebooks im Output-Header, z.B. ``"NB01"``, ``"K_03"``.
+    files : list of tuple, optional
+        Zu prüfende Dateien als ``(path, label, min_bytes)``-Tuples.
+
+        * ``min_bytes = 0`` → nur Existenz prüfen, Grösse nicht ausgeben
+          (z.B. für PNG-Charts).
+        * ``min_bytes > 0`` → zusätzlich Grösse prüfen und in KB/MB ausgeben
+          (z.B. für CSV-Dateien).
+
+        Bei ``files=None`` oder ``files=[]`` wird kein Check ausgeführt;
+        die Funktion dient dann als reiner Status-Print (für Report-NBs
+        ohne eigene Outputs wie K_00).
+    weiter_msg : str, optional
+        Nachricht für den Erfolgsfall, z.B. ``"NB02 Daten Bereinigung"``.
+        Default: ``"nächstes Notebook"``.
+    fehler_msg : str, optional
+        Nachricht für den Fehlerfall (Kurzform, ohne "Fehler beheben vor").
+        Default: identisch mit ``weiter_msg``.
+    extras : list of str, optional
+        Zusätzliche Print-Zeilen zwischen Datei-Check und Weiter-/Fehler-Hinweis.
+        Sinnvoll für Kür-Hinweise oder Kontext.
+    show_dataindex : bool, default False
+        Wenn True, wird der aktive Auszug aus ``../sync/dataindex.csv`` ausgegeben.
+        Typisch für NB01.
+    dataindex_path : str, default '../sync/dataindex.csv'
+        Pfad zur dataindex.csv (für ``show_dataindex=True``).
+    width : int, default 60
+        Breite der Trennlinie aus ``=``-Zeichen.
+
+    Return
+    ------
+    bool
+        ``True`` wenn alle Files existieren und Mindestgrösse erfüllen,
+        ``False`` sonst. Bei ``files=None``/leer immer ``True``.
+    """
+    print(f'{nb_label} – Abschlusskontrolle')
+    print('=' * width)
+
+    all_ok = True
+
+    if files:
+        for path, label, min_bytes in files:
+            exists = os.path.exists(path)
+            size = os.path.getsize(path) if exists else 0
+            ok = exists and size >= min_bytes
+
+            if min_bytes > 0:
+                size_str = _format_size(size) if exists else '   FEHLT'
+                print(f'  {"✅" if ok else "❌"}  {label:<45} {size_str}')
+            else:
+                print(f'  {"✅" if ok else "❌"}  {label}')
+
+            if not ok:
+                all_ok = False
+
+    if extras:
+        if files:
+            print()
+        for line in extras:
+            print(line)
+
+    if show_dataindex and os.path.exists(dataindex_path):
+        import pandas as pd
+        df_idx = pd.read_csv(dataindex_path)
+        active = df_idx[df_idx['status'] == 'active']
+        print(f'\ndataindex.csv: {len(df_idx)} Einträge total, {len(active)} active')
+        print(active[['filename', 'data_type', 'rows', 'size_kb', 'timestamp']]
+              .to_string(index=False))
+
+    print()
+    weiter = weiter_msg or 'nächstes Notebook'
+    fehler = fehler_msg or weiter
+    if all_ok:
+        print(f'→ Weiter mit {weiter}.')
+    else:
+        print(f'→ Fehler beheben vor {fehler}.')
+
+    return all_ok
+
+
+def pipeline_overview(nb_label, sections, *, weiter_msg=None, width=60):
+    """Mehr-Sektionen-Übersicht für Übersichts-NBs (NB00, K_00).
+
+    Im Gegensatz zu :func:`final_check` zeigt diese Funktion mehrere benannte
+    Sektionen mit eigenem Header, jede mit einer Liste von Dateien oder einer
+    automatischen Verzeichnis-Auflistung.
+
+    Parameter
+    ---------
+    nb_label : str
+        Label des Notebooks, z.B. ``"NB00"``.
+    sections : list of tuple
+        Liste von ``(header, items)``-Tuples. ``items`` ist eine Liste von:
+
+        * ``(path, label, min_bytes)`` — einzelne Datei (wie ``final_check``)
+        * ``(path, label, min_bytes, 'file')`` — explizit Datei
+        * ``(path, '', 0, 'dir_listing')`` — listet alle Files im Verzeichnis
+          ``path`` auf (alphabetisch, mit Grösse). ``label`` wird ignoriert.
+
+        Mischung aus mehreren Item-Typen pro Sektion ist erlaubt.
+    weiter_msg : str, optional
+        Nachricht für den Weiter-Hinweis am Ende.
+    width : int, default 60
+        Breite der Trennlinie.
+
+    Return
+    ------
+    bool
+        ``True`` wenn alle einzeln gelisteten Files OK sind. Bei ``dir_listing``
+        wird Existenz des Verzeichnisses geprüft, der Inhalt aber nicht
+        gegen Erwartungen verglichen (es wird gezeigt was da ist).
+    """
+    print(f'{nb_label} – Abschluss')
+    print('=' * width)
+
+    all_ok = True
+
+    for header, items in sections:
+        print(f'\n{header}:')
+
+        for item in items:
+            if len(item) == 4:
+                path, label, min_bytes, kind = item
+            else:
+                path, label, min_bytes = item
+                kind = 'file'
+
+            if kind == 'dir_listing':
+                if os.path.exists(path):
+                    files_in_dir = sorted(f for f in os.listdir(path)
+                                          if os.path.isfile(os.path.join(path, f)))
+                    if not files_in_dir:
+                        print(f'  ⚠️   (Verzeichnis ist leer)')
+                    for f in files_in_dir:
+                        fpath = os.path.join(path, f)
+                        size_str = _format_size(os.path.getsize(fpath))
+                        print(f'  ✅  {f:<45} {size_str}')
+                    print(f'  {len(files_in_dir)} Datei(en) vorhanden')
+                else:
+                    print(f'  ❌  Verzeichnis nicht vorhanden: {path}')
+                    all_ok = False
+
+            else:  # kind == 'file'
+                exists = os.path.exists(path)
+                size = os.path.getsize(path) if exists else 0
+                ok = exists and size >= min_bytes
+
+                if min_bytes > 0:
+                    size_str = _format_size(size) if exists else '   FEHLT'
+                    print(f'  {"✅" if ok else "❌"}  {label:<45} {size_str}')
+                else:
+                    print(f'  {"✅" if ok else "❌"}  {label}')
+
+                if not ok:
+                    all_ok = False
+
+    if weiter_msg:
+        print(f'\n→ Weiter mit {weiter_msg}.')
+
+    return all_ok

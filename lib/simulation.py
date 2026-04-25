@@ -60,8 +60,11 @@ def simulate_battery_dispatch(prices_df, capacity_kwh, power_kw,
 
     Notes
     -----
-    Optimierung: Tages-Quantile werden einmal vorab berechnet, nicht für
-    jede Zeile neu — reduziert Laufzeit von O(n²) auf O(n).
+    Performance-Optimierungen:
+      1. Tages-Quantile werden EINMAL vorab berechnet (nicht pro Zeile) →
+         reduziert Laufzeit von O(n²) auf O(n).
+      2. NumPy-Arrays statt ``iterrows()`` für die innere Schleife → typisch
+         ~50× schneller bei mehrjährigen Stundenreihen.
     """
     import numpy as np
     import pandas as pd

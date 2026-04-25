@@ -99,6 +99,10 @@
     },
     "langzeit": {
       "lifetime_long_j": 20
+    },
+    "monitoring": {
+      "spread_trigger_eur_mwh": 30,
+      "_hint_spread_trigger": "Mindest-Spread (EUR/MWh) für Rentabilitäts-Trigger (vgl. NB00 §3.5, K_03). Synchron mit kuer.markt.spread_breakeven_privat_eur_mwh halten."
     }
   },
   "_section_kuer": "Parameter ausschliesslich für kuer/ Notebooks (K_00–K_10, K_99)",
