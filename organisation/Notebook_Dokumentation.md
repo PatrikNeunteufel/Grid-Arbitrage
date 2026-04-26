@@ -38,14 +38,15 @@ Die `lib/`-Struktur bündelt projektweit wiederverwendete Funktionen. Dieses Kap
 | Modul | Funktionen / Symbole | Hauptzweck |
 |-------|---------------------|------------|
 | [`lib`](#lib-init) (`__init__.py`) | `ensure_installed` | Meta-Installer für pip-Pakete |
-| [`lib.plotting`](#lib-plotting) | `show_source`, `should_skip`, `make_gif_chart`, `show_chart` | Quellcode-Anzeige, Chart-Skip-Logik, GIF-Erzeugung, Chart-Anzeige |
+| [`lib.plotting`](#lib-plotting) | `show_source`, `should_skip`, `make_gif_chart`, `show_chart`, `make_spline_h24` | Quellcode-Anzeige, Chart-Skip-Logik, GIF-Erzeugung, Chart-Anzeige, Tagesprofil-Spline |
 | [`lib.widgets`](#lib-widgets) | `slide_or_play`, `show_animation` | Interaktive Anzeige von Animationen (GIF oder Frame-Slider) |
-| [`lib.io_ops`](#lib-io-ops) | `log_dataindex`, `load_transfer`, `save_transfer`, `needs_download`, `needs_rebuild`, `log_missing` | Datenregister, Transfer-JSON, Reload-Checks |
+| [`lib.io_ops`](#lib-io-ops) | `log_dataindex`, `load_transfer`, `save_transfer`, `needs_download`, `needs_rebuild`, `log_missing`, `final_check`, `pipeline_overview` | Datenregister, Transfer-JSON, Reload-Checks, Abschluss- und Pipeline-Übersicht |
 | [`lib.data_fetchers`](#lib-data-fetchers) | `fetch_entsoe_yearly` | ENTSO-E-API-Loader mit 503-Retry |
 | [`lib.simulation`](#lib-simulation) | `simulate_battery_dispatch` | Batterie-Dispatch-Kernalgorithmus |
 | [`lib.columns`](#lib-columns) | `find_col` | Spaltennamen-Detektion über Synonyme |
-| [`lib.grid_topo`](#lib-grid-topo) | `load_kantone`, `KANT_NUM_TO_ABK`, `KANT_ABK_SET` | Schweizer Kantons-Geodaten |
+| [`lib.grid_topo`](#lib-grid-topo) | `load_kantone`, `KANT_NUM_TO_ABK`, `KANT_ABK_SET`, `KANT_NAME_TO_ABK` | Schweizer Kantons-Geodaten + Kürzel-/Namens-Mapping (DE/FR/IT) |
 | [`lib.map_animation`](#lib-map-animation) | `make_gif_fast_map`, `clear_background_cache` | Performance-optimierter Karten-GIF-Renderer |
+| [`lib.bfe_zonen`](#lib-bfe-zonen) | `load_bfe_plants`, `aggregate_zone_prod`, `aggregate_zone_total_inst`, `aggregate_zone_mean_prod`, `SUBCAT_MAP`, `MAINCAT_MAP` | BFE-Anlagen-Loader und Zonen-Aggregation für experimentelle 6-Zonen-Modelle |
 
 **Importmuster** in jedem NB-Bootstrap:
 
@@ -380,6 +381,66 @@ Nutzt intern `log_dataindex` und Standard-I/O (`open(..., 'a')` für append).
 
 ---
 
+### `final_check(nb_label, files=None, *, weiter_msg=None, fehler_msg=None, extras=None, show_dataindex=False, dataindex_path='../sync/dataindex.csv', width=60)` <a id="lib-io-ops-final-check"></a>
+
+```python
+final_check(nb_label: str,
+            files: list[tuple] | None = None,
+            *, weiter_msg: str | None = None,
+            fehler_msg: str | None = None,
+            extras: list[str] | None = None,
+            show_dataindex: bool = False,
+            dataindex_path: str = '../sync/dataindex.csv',
+            width: int = 60) -> bool
+```
+
+**Was sie tut:** Standardisierte End-of-Notebook-Kontrolle. Prüft Existenz und Mindestgrösse der angegebenen Output-Dateien, gibt einen formatierten Block aus (Header mit `nb_label`, Datei-Liste mit ✅/❌, optionaler `extras`-Block, Weiter-/Fehler-Hinweis) und liefert `all_ok` als Bool zurück.
+
+`files` ist eine Liste von `(path, label, min_bytes)`-Tuples. `min_bytes=0` bedeutet "nur Existenz prüfen, Grösse nicht ausgeben" (typisch für PNG-Charts); `min_bytes>0` zusätzlich Grössenprüfung mit Ausgabe in KB/MB. Bei `files=None` wird kein Check ausgeführt — die Funktion dient dann als reiner Status-Print für Report-NBs ohne eigene Outputs (z.B. K_00).
+
+`show_dataindex=True` druckt zusätzlich den aktiven Auszug aus `../sync/dataindex.csv` (typisch für NB01).
+
+**Warum extrahiert:** Die Abschlusszelle hatte in jedem NB den gleichen Aufbau (`EXPECTED_FILES`-Liste, Schleife mit `os.path.exists`+`getsize`, Print-Block mit Trennlinie, Weiter-Hinweis). Konsolidierung reduziert ~15 Zeilen Boilerplate pro NB auf einen Funktionsaufruf.
+
+**Aufgerufen von:** `NB01`, `NB02`, `NB03`, `NB04`, `K_00`, `K_01`, `K_02`, `K_03`, `K_05`, `K_06`, `K_07`, `K_08`, `K_09`, `K_10`, `K_99` — Abschlusszelle aller Pflicht- und Kür-NBs.
+
+**Verwendete Bibliotheksobjekte (Erstnennung innerhalb lib)**
+
+| Funktion / Objekt | Library | Beschreibung |
+|---|---|---|
+| `os.path.exists(path)` | `os.path` | Prüft Existenz einer Datei. |
+| `os.path.getsize(path)` | `os.path` | Datei-Grösse in Bytes. |
+| `pd.read_csv(path)` | `pandas` | Lädt `dataindex.csv` für `show_dataindex=True` (Re-Use aus `log_dataindex`). |
+
+---
+
+### `pipeline_overview(nb_label, sections, *, weiter_msg=None, width=60)` <a id="lib-io-ops-pipeline-overview"></a>
+
+```python
+pipeline_overview(nb_label: str,
+                  sections: list[tuple[str, list]],
+                  *, weiter_msg: str | None = None,
+                  width: int = 60) -> bool
+```
+
+**Was sie tut:** Mehr-Sektionen-Übersicht für Übersichts-NBs (NB00 Business Case, K_00 Business Strategy). Im Gegensatz zu `final_check` zeigt diese Funktion mehrere benannte Sektionen mit eigenem Header, jede mit einer Liste von Dateien oder einer automatischen Verzeichnis-Auflistung.
+
+`sections` ist eine Liste von `(header, items)`-Tuples. `items` darf mischen:
+
+- `(path, label, min_bytes)` — einzelne Datei (wie `final_check`)
+- `(path, label, min_bytes, 'file')` — explizit Datei
+- `(path, '', 0, 'dir_listing')` — listet alle Files im Verzeichnis `path` auf (alphabetisch, mit Grösse). Nützlich z.B. um den `output/charts/<SZ>/`-Ordner einer Sektion automatisch aufzulisten ohne jede PNG-Datei einzeln aufzuzählen.
+
+**Warum extrahiert:** Übersichts-NBs zeigen typischerweise mehrere Sektionen (Pflicht-Outputs, Kür-Outputs, Charts pro Szenario) — die manuelle Implementierung war pro NB ~50 Zeilen Print-Logik. `pipeline_overview` ersetzt das durch eine deklarative `sections`-Liste.
+
+**Aufgerufen von:** `NB00` (Business Case — Übersicht aller Pflicht-NB-Outputs), `K_00` (Business Strategy — Übersicht aller Kür-NB-Outputs).
+
+**Verwendete Bibliotheksobjekte**
+
+Nutzt dieselben `os.path`-Aufrufe wie `final_check` plus `os.listdir(path)` für `'dir_listing'`-Items.
+
+---
+
 ## `lib.data_fetchers` <a id="lib-data-fetchers"></a>
 
 HTTP-/API-Loader mit Retry-Logik für externe Datenquellen.
@@ -560,6 +621,89 @@ clear_background_cache() -> None
 **Aufgerufen von:** Optional in Development-Zellen von K_01c, K_01d (auskommentiert, wird nur bei Bedarf aktiviert).
 
 ---
+
+---
+
+## `lib.bfe_zonen` <a id="lib-bfe-zonen"></a>
+
+BFE-Anlagen-Loader und Zonen-Aggregation. Konsolidiert Energieträger-Mapping und Kantons-zu-Zonen-Aggregation für die experimentellen 6-Zonen-Notebooks (K_01b/c/d). Vor der Extraktion war die Aggregations-Logik in jedem der drei NBs leicht unterschiedlich implementiert — und die "Zone-Produktion" war hardcoded statt aus den realen BFE-Daten berechnet (siehe E-01 im Review-Protokoll).
+
+**Konstanten:**
+
+- `SUBCAT_MAP` — Mapping `subcat_1..subcat_10` → `'Wasserkraft'/'Solar'/'Wind'/'Biomasse'/...`. BFE-Anlagen sind nach Subkategorie klassifiziert (1=Wasserkraft, 2=Solar, ..., 10=Abfall).
+- `MAINCAT_MAP` — Mapping `maincat_1..maincat_4` → `'Wasserkraft'/'Solar'/'Kernkraft'/'Erdgas'`. Wird als Fallback genutzt wenn `subcat` fehlt (ältere BFE-Datensätze).
+
+### `load_bfe_plants(data_dir)` <a id="lib-bfe-zonen-load-bfe-plants"></a>
+
+```python
+load_bfe_plants(data_dir: str) -> geopandas.GeoDataFrame
+```
+
+**Was sie tut:** Lädt das BFE-Produktionsanlagen-GeoPackage (`bfe_produktionsanlagen.gpkg`) aus dem angegebenen Verzeichnis und ergänzt zwei vereinheitlichte Spalten:
+
+- `ET_group` — vereinheitlichter Energieträger-Name (`'Solar'`/`'Wasserkraft'`/`'Kernkraft'`/`'Wind'`/...). Ableitung: zuerst `SUBCAT_MAP[subcat]`, Fallback `MAINCAT_MAP[maincat]`.
+- `kw` — Leistung in kW (numerisch, robust gegen String-Werte mit `pd.to_numeric(errors='coerce')`).
+
+Behält die Original-Geometrie (`EPSG:2056` LV95) — Caller können nach Belieben in WGS84 umprojizieren.
+
+**Warum extrahiert:** Drei NBs (K_01b/c/d) brauchen denselben Loader mit demselben ET-Mapping — eigene Implementierungen drifteten in der Behandlung neuer Energieträger auseinander.
+
+**Aufgerufen von:** `K_01b`, `K_01c`, `K_01d`.
+
+### `aggregate_zone_prod(gdf_plants, kanton_to_zone, kanton_col=None, kept_ets=('Solar', 'Wasserkraft', 'Kernkraft'), collapse_to='Andere')` <a id="lib-bfe-zonen-aggregate-zone-prod"></a>
+
+```python
+aggregate_zone_prod(gdf_plants: gpd.GeoDataFrame,
+                    kanton_to_zone: dict[str, str],
+                    kanton_col: str | None = None,
+                    kept_ets: tuple = ('Solar', 'Wasserkraft', 'Kernkraft'),
+                    collapse_to: str | None = 'Andere'
+                    ) -> dict[str, dict[str, float]]
+```
+
+**Was sie tut:** Aggregiert installierte Kapazität pro Zone × Energieträger. `kanton_to_zone` ist ein Dict `{Kantonskürzel: Zonen-Name}` — mit unterschiedlichen Mappings (4 Zonen vs. 6 Zonen) entstehen aus denselben BFE-Quelldaten unterschiedliche Aggregate. `kept_ets` definiert welche Energieträger als eigene Keys erhalten bleiben; alle anderen werden zu `collapse_to` ('Andere') zusammengeführt. Bei `collapse_to=None` bleiben **alle** ETs als eigene Keys erhalten — nötig für K_01b's detaillierte CF-Berechnung.
+
+Rückgabe: `{Zone: {ET: MW_installiert}}`. Beispiel aus 6-Zonen-Modell, Zone Süd (Tessin): `{'Solar': 786.0, 'Wasserkraft': 7814.0, 'Kernkraft': 0.0, 'Andere': 154.0}` (Stand BFE 2025).
+
+**Garantie:** Alle in `kept_ets + (collapse_to,)` genannten ETs sind im Output enthalten — auch mit Wert 0.0. Das sichert defensive Behandlung gegen "fehlende" Energieträger im Plot-Code (siehe E-03 im Review-Protokoll).
+
+**Warum extrahiert:** Single Source für Zone-Aggregation; verhindert Drift zwischen den drei experimentellen NBs.
+
+**Aufgerufen von:** `K_01b` (mit `collapse_to=None` für detaillierte ETs), `K_01c`, `K_01d`.
+
+### `aggregate_zone_total_inst(gdf_plants, kanton_to_zone, kanton_col=None)` <a id="lib-bfe-zonen-aggregate-zone-total-inst"></a>
+
+```python
+aggregate_zone_total_inst(gdf_plants, kanton_to_zone,
+                          kanton_col: str | None = None
+                          ) -> dict[str, float]
+```
+
+**Was sie tut:** Komfort-Wrapper. Summiert `aggregate_zone_prod(...)` über alle Energieträger pro Zone und liefert `{Zone: total_MW_installiert}`.
+
+**Aufgerufen von:** `K_01b` (für `zone_inst_b` — Total-Kapazität pro Zone).
+
+### `aggregate_zone_mean_prod(gdf_plants, kanton_to_zone, cf_per_et, kanton_col=None)` <a id="lib-bfe-zonen-aggregate-zone-mean-prod"></a>
+
+```python
+aggregate_zone_mean_prod(gdf_plants, kanton_to_zone,
+                         cf_per_et: dict[str, float],
+                         kanton_col: str | None = None
+                         ) -> dict[str, float]
+```
+
+**Was sie tut:** Mittlere Produktion pro Zone in MW — Aggregation aus installierter Kapazität gewichtet mit Kapazitätsfaktor `cf_per_et` pro Energieträger (`{'Solar': 0.12, 'Wasserkraft': 0.38, 'Kernkraft': 0.85, ...}`). Fehlende ETs in `cf_per_et` fallen zurück auf `cf_per_et.get('Andere', 0.40)`.
+
+**Aufgerufen von:** `K_01b` (für `zone_prod_b` — mittlere Einspeisung pro Zone, Basis für Zonenbilanz).
+
+**Verwendete Bibliotheksobjekte (Erstnennung innerhalb lib)**
+
+| Funktion / Objekt | Library | Beschreibung |
+|---|---|---|
+| `gpd.read_file(path)` | `geopandas` | Lädt GeoPackage als GeoDataFrame. |
+| `df.groupby([col1, col2])[col3].sum()` | `pandas` | Aggregation über zwei Schlüssel-Spalten. |
+| `series.unstack(fill_value=0.0)` | `pandas` | Pivotiert Multi-Index-Series zu DataFrame mit fehlenden Kombinationen aufgefüllt. |
+
 
 # Organisation (`organisation/`)
 
@@ -1246,14 +1390,72 @@ Diese drei sind NB-lokal und nicht in `lib.simulation` — sie haben andere Para
 
 ---
 
+# Experimental (`experimental/`)
+
+Erkundungs-Notebooks die im Zweifel **nicht Teil der Abgabe** sind, aber als Techdemo für zukünftige Erweiterungen dienen. Seit dem April-2026-Refactoring (Option C) folgen sie den gleichen Konventionen wie die Pflicht- und Kür-NBs (utf-8-Encoding, `lib`-Imports, `dataindex`-Logging, `show_source`-Blöcke).
+
+Die experimentellen NBs lesen aus einer eigenen `experimental/xconfig.json` (strukturell parallel zu `sync/config.json`). Anleitung zum späteren Mergen in die Haupt-`config.json`: `experimental/MIGRATION.md`.
+
+## K_01b — Zonenmodell Erweitert (`K_01b_Zonenmodell_Erweitert.ipynb`)
+
+Erweiterung des K_01-4-Zonen-Modells auf 6 Zonen (zusätzlich Tessin und Wallis als eigene Zonen). Begründung: Tessin ist topologischer Nord-Süd-Engpass, Wallis ist Wasserkraft-Schwerpunkt — die 4-Zonen-Aggregation maskiert beides.
+
+### Datenfluss
+
+Lädt BFE-Anlagen via [`load_bfe_plants`](#lib-bfe-zonen-load-bfe-plants) und aggregiert sie mit `kanton_to_zone` (6 Zonen) via [`aggregate_zone_prod`](#lib-bfe-zonen-aggregate-zone-prod) (`collapse_to=None` für detaillierte ETs), [`aggregate_zone_total_inst`](#lib-bfe-zonen-aggregate-zone-total-inst) und [`aggregate_zone_mean_prod`](#lib-bfe-zonen-aggregate-zone-mean-prod). Bevölkerungsdaten kommen aus dem K_01-Cache (BFS STATPOP).
+
+### Hauptergebnisse
+
+- 6-Zonen-Aggregat (Stand BFE 2025): Süd Solar 786 MW / Wasserkraft 7814 MW / Andere 154 MW
+- Battery Value Index (BVI) pro Zone — kombiniert Zonenimbalance und Engpassnähe
+- Kein eigener Transfer-Output — Resultate fliessen in K_01c/K_01d als Input
+
+## K_01c — Energiefluss-Animationen (`K_01c_Energiefluss_Animationen.ipynb`)
+
+Animierte Energieflüsse zwischen den 6 Zonen mit [Phase-Velocity-Flow](O_02_Glossar.ipynb#g-phase-velocity-flow): Lichtpunkte bewegen sich entlang der Zonen-Verbindungen mit einer Geschwindigkeit proportional zum momentanen Saldo. Erzeugt 10 GIFs (saisonal × tagesweise).
+
+### Setup & Daten
+
+Lädt aus K_01-Cache (Kantone, BFS) und nutzt [`load_bfe_plants`](#lib-bfe-zonen-load-bfe-plants) + [`aggregate_zone_prod`](#lib-bfe-zonen-aggregate-zone-prod). Kantons-Hintergrund kommt von [`load_kantone`](#lib-grid-topo-load-kantone). Tagesprofile via [Cubic Spline](O_02_Glossar.ipynb#g-cubic-spline) (24-Stunden-Stützstellen → 96 Frames).
+
+### Animation
+
+Alle 10 GIFs nutzen [`make_gif_fast_map`](#lib-map-animation-make-gif-fast-map) mit Background-Cache (Kantone-Layer wird einmal gerendert, in jedem Frame via `imshow` wiederverwendet). Anzeige im NB via [`show_animation`](#lib-widgets-show-animation), Skip-Logik via [`should_skip`](#lib-plotting-should-skip).
+
+### Defensive Behandlung 'Andere'-Energieträger
+
+Energieträger-Sets werden mit `result = {'Solar': 0.0, 'Wasserkraft': 0.0, 'Kernkraft': 0.0, 'Andere': 0.0}` initialisiert — neue BFE-Energieträger fallen automatisch in den `'Andere'`-Bucket statt Plot-Loops zu brechen (siehe E-03 im Review-Protokoll).
+
+## K_01d — Grid-Topologie & Netzfluss-Animationen (`K_01d_Grid_Topologie.ipynb`)
+
+Reale CH-Netztopologie aus OpenStreetMap (via `earth-osm`-Tool) mit Moving-Dots-Animation auf den Hochspannungsleitungen.
+
+### OSM Power-Grid
+
+Filter: `power=line` mit `voltage ∈ [110, 132, 150, 220, 380]` kV und `snap_distance=5000m` für Topologie-Vereinfachung. Engere Filter retournieren < 5 % der Leitungen — diese Parameterwahl ist validiert (E-05 im Review-Protokoll). Earth-OSM liefert Koordinaten als JSON-Arrays in der `lonlat`-Spalte (nicht im Standard-`geometry`-Feld) — das NB hat einen Multi-Format-Parser dafür.
+
+### Datenfluss
+
+Kombiniert: BFE-Anlagen via [`load_bfe_plants`](#lib-bfe-zonen-load-bfe-plants) + [`aggregate_zone_prod`](#lib-bfe-zonen-aggregate-zone-prod) für Erzeugungsknoten, OSM für Leitungen, Kantone via [`load_kantone`](#lib-grid-topo-load-kantone) für Hintergrund. Animations-Frames via [Cubic Spline](O_02_Glossar.ipynb#g-cubic-spline).
+
+### Animation
+
+Sechs separate GIFs (saisonal + Wochenmittel + Spitzenstunden), alle via [`make_gif_fast_map`](#lib-map-animation-make-gif-fast-map). Overlay-Layouts (`OV_BILANZ_POS`, `OV_SALDO_POS`, `OV_PROD_VERBRAUCH_POS`) sind pixel-genau manuell justiert — werden bei Re-Runs nicht zurückgesetzt.
+
+### Multi-Country-Skelett
+
+`country_config`-Block ist als Erweiterungs-Skelett vorhanden (DACH/EU-Erweiterung), aber BFE-Äquivalente sind nicht parametrisiert. Aktueller Stand: Schema vorhanden, nicht produktiv.
+
+---
+
 # Bekannte Bezeichnungsleichen
 
-Bei der Überarbeitung auf die neue Struktur wurden folgende veralteten Bezeichnungen in Notebook-Titeln gefunden, die noch nicht angepasst wurden:
+Bei der Überarbeitung auf die neue Struktur wurden folgende veralteten Bezeichnungen in Notebook-Titeln gefunden. Stand 26.04.2026 sind alle Titel-Zellen aktualisiert.
 
-| Datei | Aktueller Titel | Korrekter Titel |
-|---|---|---|
-| `organisation/O_04_Review_Protokoll.ipynb` | `NB00c – Review-Protokoll & Qualitätssicherung` | `O_04 – Review-Protokoll & Qualitätssicherung` |
-| `organisation/O_99_Datenprovenienz.ipynb` | `NB99 – Daten-Provenienz & Werdegang` | `O_99 – Daten-Provenienz & Werdegang` |
-| `notebooks/00_Business_Case.ipynb` | `NB00 – Business Case` | `NB00 – Business Case` *(akzeptabel, da Datei `00_Business_Case.ipynb`)* |
+| Datei | Status |
+|---|---|
+| `organisation/O_04_Review_Protokoll.ipynb` | ✅ Titel auf `O_04 – Review-Protokoll & Qualitätssicherung` korrigiert |
+| `organisation/O_99_Datenprovenienz.ipynb` | ✅ Titel auf `O_99 – Daten-Provenienz & Werdegang` korrigiert |
+| `notebooks/00_Business_Case.ipynb` | ✅ `NB00 – Business Case` (akzeptabel, Datei heisst `00_Business_Case.ipynb`) |
 
-**Empfehlung:** O_04 und O_99 sollten in der jeweiligen Titel-Zelle (cell[0]) angepasst werden. Der Titelfix ist minimal — nur die erste Zeile der Markdown-Zelle betrifft.
+Keine offenen Bezeichnungs-Inkonsistenzen mehr.

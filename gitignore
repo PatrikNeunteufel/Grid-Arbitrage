@@ -4,14 +4,16 @@
 __pycache__/
 
 # ── Daten (gross, nicht ins Repo) ─────────────────────────────────────────────
-data/raw/
-data/intermediate/
+**/data/raw/
+**/data/intermediate/
 # data/processed/ → ggf. einkommentieren wenn auch gross
 
 # ── Outputs ───────────────────────────────────────────────────────────────────
-output/charts/
+**/output/charts/
 logs/
 
+experimental/output/charts/EXP_kuer_k01d_*.gif
+experimental/output/charts/*frames/
 # ── IDE / OS ──────────────────────────────────────────────────────────────────
 .vs/
 .vscode/
@@ -21,3 +23,11 @@ Thumbs.db
 
 # ── Archiv ────────────────────────────────────────────────────────────────────
 .archive/
+**/.archive/
+*.zip
+
+# Build
+data/
+# Temporäre Dateien
+*.tmp
+*.log

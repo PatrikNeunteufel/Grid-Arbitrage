@@ -1,0 +1,411 @@
+{
+  "_meta": {
+    "purpose": "Experimentelle Konfigurationen für experimental/ Notebooks (K_01b, K_01c, K_01d).",
+    "scope": "Strukturell parallel zu sync/config.json. Alle Pfade unter 'kuer.k01b', 'kuer.k01c', 'kuer.k01d' so dass Migration in config.json via Merge möglich ist (siehe MIGRATION.md).",
+    "last_updated": "2026-04-26",
+    "status": "Experimental — nicht Teil der Pflicht-/Kür-Abgabe",
+    "removed_in_v2": "zone_prod_installed_mw entfernt (K_01b/c/d berechnen jetzt aus echten BFE-Daten via lib.bfe_zonen.aggregate_zone_prod). Hardcoded Modellwerte sind nicht mehr Teil der Config."
+  },
+  "experimental_aktiv": {
+    "zonenmodell": "k01b_6zonen",
+    "_zonenmodell_optionen": [
+      "k01_5zonen",
+      "k01b_6zonen"
+    ],
+    "country": "CH",
+    "_country_optionen": [
+      "CH",
+      "DE",
+      "AT",
+      "FR",
+      "IT"
+    ],
+    "granularity": "kantone",
+    "_granularity_optionen": [
+      "kantone",
+      "bezirke",
+      "gemeinden",
+      "nuts3"
+    ]
+  },
+  "kuer": {
+    "k01b": {
+      "spez_kw_person": 0.76,
+      "_spez_kw_person_quelle": "BFE Elektrizitätsstatistik 2023, identisch K_01",
+      "kanton_to_zone": {
+        "ZH": "Nordost",
+        "TG": "Nordost",
+        "SH": "Nordost",
+        "SG": "Nordost",
+        "AR": "Ostschweiz",
+        "AI": "Ostschweiz",
+        "GR": "Ostschweiz",
+        "GL": "Ostschweiz",
+        "SZ": "Ostschweiz",
+        "AG": "Mitte-Erzeugung",
+        "SO": "Mitte-Erzeugung",
+        "BL": "Mitte-Erzeugung",
+        "BE": "Mitte-Transit",
+        "LU": "Mitte-Transit",
+        "BS": "Mitte-Transit",
+        "ZG": "Mitte-Transit",
+        "NW": "Mitte-Transit",
+        "OW": "Mitte-Transit",
+        "VD": "West",
+        "GE": "West",
+        "NE": "West",
+        "JU": "West",
+        "FR": "West",
+        "VS": "Süd",
+        "TI": "Süd",
+        "UR": "Süd"
+      },
+      "zone_colors": {
+        "Nordost": "#1565C0",
+        "Ostschweiz": "#00838F",
+        "Mitte-Erzeugung": "#7B1FA2",
+        "Mitte-Transit": "#388E3C",
+        "West": "#FF6F00",
+        "Süd": "#B71C1C"
+      },
+      "engpass_multiplikator": {
+        "Nordost": 1.6,
+        "Ostschweiz": 1.4,
+        "Mitte-Erzeugung": 1.2,
+        "Mitte-Transit": 0.9,
+        "West": 1.8,
+        "Süd": 2.2
+      },
+      "zone_bottleneck": {
+        "Nordost": "Grösstes Verbrauchsdefizit CH; AG-ZH Mittelland-Engpass",
+        "Ostschweiz": "Kleinwasserkraft, Nord-Süd-Transit via GR/SZ",
+        "Mitte-Erzeugung": "AKW-Überschuss (Beznau, Gösgen, Leibstadt); Nettoexport",
+        "Mitte-Transit": "Transitzone Bern-Luzern; Urban BS/ZG; ausgeglichen",
+        "West": "Import/Export Frankreich; PST-gesteuerte Grenzflüsse",
+        "Süd": "Wasserkraft-Überschuss VS+TI; Flaschenhals Göschenen-Airolo+Gotthard"
+      }
+    },
+    "k01_zonenmodell": {
+      "_kommentar": "5-Zonen-Variante als Rückfall/Vergleich. Wird bei zonenmodell=\"k01_5zonen\" aktiv. ZONE_PROD_INSTALLED wird aus BFE-Daten via lib.bfe_zonen aggregiert (nicht hier hardcoded).",
+      "kanton_to_zone": {
+        "ZH": "Nord",
+        "TG": "Nord",
+        "SH": "Nord",
+        "AR": "Nord",
+        "AI": "Nord",
+        "SG": "Nord",
+        "BE": "Mitte",
+        "SO": "Mitte",
+        "AG": "Mitte",
+        "LU": "Mitte",
+        "ZG": "Mitte",
+        "BL": "Mitte",
+        "BS": "Mitte",
+        "NW": "Mitte",
+        "OW": "Mitte",
+        "VD": "West",
+        "GE": "West",
+        "NE": "West",
+        "JU": "West",
+        "FR": "West",
+        "VS": "Süd",
+        "TI": "Süd",
+        "GR": "Ost",
+        "GL": "Ost",
+        "UR": "Ost",
+        "SZ": "Ost"
+      },
+      "zone_colors": {
+        "Nord": "#1565C0",
+        "Mitte": "#388E3C",
+        "West": "#FF6F00",
+        "Süd": "#B71C1C",
+        "Ost": "#00838F"
+      }
+    },
+    "k01_kapazitaetsfaktoren": {
+      "_kommentar": "Capacity Factors je Energieträger — gemeinsam für K_01b/c/d genutzt. 'Andere' bündelt Wind/Biomasse/Geothermie/Erdgas/etc. (alles ausser Solar/Wasserkraft/Kernkraft).",
+      "jahresdurchschnitt": {
+        "Solar": 0.12,
+        "Wasserkraft": 0.38,
+        "Kernkraft": 0.8,
+        "Andere": 0.4
+      },
+      "saisonal": {
+        "Solar": {
+          "Winter": 0.3,
+          "Frühling": 0.75,
+          "Sommer": 1.0,
+          "Herbst": 0.5
+        },
+        "Wasserkraft": {
+          "Winter": 0.65,
+          "Frühling": 0.95,
+          "Sommer": 0.9,
+          "Herbst": 0.72
+        },
+        "Kernkraft": {
+          "Winter": 1.0,
+          "Frühling": 0.98,
+          "Sommer": 0.92,
+          "Herbst": 0.98
+        },
+        "Andere": {
+          "Winter": 1.1,
+          "Frühling": 1.0,
+          "Sommer": 0.85,
+          "Herbst": 1.0
+        }
+      },
+      "saisonal_verbrauch": {
+        "Winter": 1.15,
+        "Frühling": 1.0,
+        "Sommer": 0.87,
+        "Herbst": 1.02
+      }
+    },
+    "k01c": {
+      "_kommentar": "GIF-Animations-Parameter für K_01c. Nur experimentell relevant — Standard aus visualisierung.animation gilt für K_04.",
+      "frames_per_hour": 2,
+      "frames_per_week": 2,
+      "fps_tag": 10,
+      "fps_jahr": 10,
+      "dpi_gif": 90,
+      "gif_a": {
+        "cluster_deg": 0.15,
+        "size_scale": 160,
+        "alpha_min": 0.0,
+        "alpha_max": 0.92
+      },
+      "gif_c": {
+        "norm_mode": "per_path",
+        "mw_norm_global": 2500,
+        "n_dots_base": 5,
+        "dot_size": 45,
+        "show_mw_label": true
+      }
+    },
+    "k01d": {
+      "_kommentar": "Grid-Topologie + Multi-Country. User-Layout-Settings WERDEN HIER GEPFLEGT — bei Updates manuell synchronisieren.",
+      "force_reload": false,
+      "country_config": {
+        "CH": {
+          "name": "Schweiz",
+          "iso2": "CH",
+          "entsoe_bz": "10YCH-SWISSGRIDZ",
+          "map_xlim": [
+            5.88,
+            10.65
+          ],
+          "map_ylim": [
+            45.78,
+            47.95
+          ],
+          "voltage_kv": [
+            110,
+            132,
+            150,
+            220,
+            380
+          ],
+          "snap_dist_m": 5000
+        },
+        "DE": {
+          "name": "Deutschland",
+          "iso2": "DE",
+          "entsoe_bz": "10Y1001A1001A83F",
+          "map_xlim": [
+            5.5,
+            15.5
+          ],
+          "map_ylim": [
+            47.0,
+            55.5
+          ],
+          "voltage_kv": [
+            110,
+            220,
+            380
+          ],
+          "snap_dist_m": 5000
+        },
+        "AT": {
+          "name": "Österreich",
+          "iso2": "AT",
+          "entsoe_bz": "10YAT-APG------L",
+          "map_xlim": [
+            9.5,
+            17.2
+          ],
+          "map_ylim": [
+            46.3,
+            49.1
+          ],
+          "voltage_kv": [
+            110,
+            220,
+            380
+          ],
+          "snap_dist_m": 5000
+        }
+      },
+      "voltage_styling": {
+        "colors": {
+          "380": "#EF5350",
+          "220": "#FFA726",
+          "150": "#42A5F5",
+          "110": "#66BB6A"
+        },
+        "lw": {
+          "380": 2.5,
+          "220": 1.5,
+          "150": 1.0,
+          "110": 0.7
+        }
+      },
+      "animation_zenodo": {
+        "record": "14144752",
+        "data_source_label": "PyPSA-Eur Zenodo",
+        "frame_mult": 3,
+        "phase_rot_per_sec": 0.25,
+        "flow_hubs_per_zone": 4,
+        "flow_threshold_mw": 15,
+        "bg_edge_alpha": 0.55,
+        "bg_node_alpha": 0.65,
+        "border_hub_mark": true,
+        "tagesmittel": {
+          "resolution": "daily",
+          "smooth_width": 1
+        }
+      },
+      "gif_d": {
+        "norm_mode": "per_edge",
+        "mw_norm_global": 800,
+        "n_dots_base": 4,
+        "dot_size": 35,
+        "min_mw": 40,
+        "show_label": false
+      },
+      "overlay_layout": {
+        "_kommentar": "User-spezifische Layout-Settings für K_01d — manuell justiert. Bei jedem Run prüfen ob Positionen passen. Werte sind Axes-Fraction (0..1).",
+        "leg_spannung": {
+          "ein": true,
+          "pos": [
+            0.01,
+            0.01
+          ],
+          "align": [
+            "left",
+            "bottom"
+          ],
+          "size": 10.5,
+          "titel": "Spannung",
+          "kv_levels": [
+            380,
+            220
+          ]
+        },
+        "leg_dotmw": {
+          "ein": true,
+          "pos": [
+            0.75,
+            0.01
+          ],
+          "align": [
+            "left",
+            "bottom"
+          ],
+          "size": 12.5,
+          "titel": "Dot-Skala",
+          "werte": [
+            100,
+            500,
+            1000
+          ]
+        },
+        "saldo": {
+          "ein": true,
+          "pos": [
+            0.5,
+            0.95
+          ],
+          "align": [
+            "center",
+            "top"
+          ],
+          "size": 7.5
+        },
+        "prodverb": {
+          "ein": true,
+          "pos": [
+            0.99,
+            0.97
+          ],
+          "align": [
+            "right",
+            "top"
+          ],
+          "size": 8.5
+        },
+        "grenzen": {
+          "ein": true,
+          "pos": [
+            0.01,
+            0.96
+          ],
+          "align": [
+            "left",
+            "top"
+          ],
+          "size": 8.5
+        },
+        "zonen": {
+          "ein": true,
+          "size": 5.5,
+          "alpha": 0.60
+        },
+        "grenzlbl": {
+          "ein": true,
+          "size": 5.5,
+          "alpha": 0.75
+        },
+        "zeit": {
+          "ein": true,
+          "size": 10
+        },
+        "balken": {
+          "ein": true,
+          "pos": [
+            0.99,
+            0.82
+          ],
+          "align": [
+            "right",
+            "top"
+          ],
+          "breite": 0.14,
+          "hoehe": 0.22,
+          "size": 5.5,
+          "ymax_mw": 14000,
+          "alpha": 0.92
+        },
+        "bilanz": {
+          "ein": true,
+          "pos": [
+            0.04,
+            0.75
+          ],
+          "align": [
+            "left",
+            "center"
+          ],
+          "breite": 0.055,
+          "hoehe": 0.32,
+          "size": 5.5,
+          "ymax_mw": 4000,
+          "alpha": 0.95
+        }
+      }
+    }
+  }
+}
