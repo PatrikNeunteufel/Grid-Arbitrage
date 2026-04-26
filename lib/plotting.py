@@ -13,17 +13,16 @@ verschoben.
 
 Quelle der in späteren Phasen zu migrierenden Funktionen:
 
-* ``make_gif_chart``   — kuer/K_04_Animationen.ipynb, Cell 8
-                         (identisches Duplikat in K_01, Cell 8)
-* ``make_spline_h24``  — kuer/K_01_Raeumliche_Analyse.ipynb, Cell 8
 * ``make_spline_w4``   — kuer/K_04_Animationen.ipynb, Cell 8
 * ``draw_base_map``    — kuer/K_01_Raeumliche_Analyse.ipynb, Cell 48
                          (lokale Variante in K_01c, Cell 17)
-* ``show_chart``       — notebooks/00_Business_Case.ipynb, Cell 7
 * ``show``, ``show_anim``, ``nb_aktiv``,
   ``check_aktiv``      — kuer/K_00_Business_Strategy.ipynb, Cell 8
 * ``highlight``        — organisation/O_01_Project_Overview.ipynb, Cell 13
 * ``fmt_size``, ``_nd`` — organisation/O_99_Datenprovenienz.ipynb
+
+Bereits migriert: ``show_source``, ``should_skip``, ``make_gif_chart``,
+``show_chart``, ``make_spline_h24``.
 
 Siehe Refactoring_Plan.md §4.1 und §6.
 """
@@ -327,6 +326,51 @@ def should_skip(
         return os.path.exists(out_path) and os.path.getsize(out_path) > 0
     # 'always' oder 'force_rebuild' → immer neu erzeugen
     return False
+
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# make_spline_h24 — periodischer kubischer Spline für 24h-Daten (aus K_01)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def make_spline_h24(values_24):
+    """Periodischer kubischer Spline für 24h-Stundenwerte.
+
+    Erzeugt einen periodischen Spline aus 24 Stundenwerten (h=0..23). Stetigkeit
+    in Wert *und* Ableitung an der Tag-Grenze (`cs(24) == cs(0)`) — geeignet für
+    Last-Profile, Solar-/Wasser-Erzeugungsprofile, Mix-Anteile. Wird in K_01
+    für Tagesverlaufs-Animationen (typisch 96 Zwischen-Punkte = 4f/h × 24h) und
+    in den Heatmap-Plots für glatte Kurven genutzt.
+
+    Parameter
+    ---------
+    values_24 : array-like, len=24
+        24 Stundenwerte. Ein zusätzlicher Wert für h=24 wird intern als Kopie
+        von `values_24[0]` ergänzt, damit der Spline schliesst.
+
+    Return
+    ------
+    scipy.interpolate.CubicSpline
+        Aufrufbar mit Stunden-Float: ``cs(12.5)`` → interpolierter Wert für
+        12:30 Uhr. Akzeptiert auch Arrays: ``cs(HOUR_TIMES)`` → Array gleicher
+        Länge.
+
+    Beispiel
+    --------
+    >>> import numpy as np
+    >>> from lib.plotting import make_spline_h24
+    >>> last_24h = [3.5, 3.2, 3.0, 2.9, 2.8, 2.9, 3.4, 4.5, 5.8, 6.2, 6.4, 6.5,
+    ...             6.3, 6.0, 5.7, 5.5, 5.6, 6.0, 6.5, 6.8, 6.5, 5.5, 4.5, 3.8]
+    >>> cs = make_spline_h24(last_24h)
+    >>> cs(12.5)        # Zwischenwert
+    >>> cs(np.linspace(0, 24, 96, endpoint=False))  # 96 Punkte
+    """
+    import numpy as np
+    from scipy.interpolate import CubicSpline
+
+    h = np.arange(25)
+    v = np.array(list(values_24) + [values_24[0]])
+    return CubicSpline(h, v, bc_type='periodic')
 
 
 

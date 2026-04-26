@@ -36,6 +36,29 @@ KANT_NUM_TO_ABK = {
 #: Alle gültigen Kürzel (als Set für schnelles Matching)
 KANT_ABK_SET = set(KANT_NUM_TO_ABK.values())
 
+#: Mapping Kantonsname (DE/FR/IT) → 2-Buchstaben-Kürzel.
+#: Deckt typische Schreibweisen aus swissBOUNDARIES3D, BFE, BFS ab — inkl.
+#: zweisprachiger Formen wie 'Valais / Wallis'.
+KANT_NAME_TO_ABK = {
+    # Deutsche Namen
+    'Zürich': 'ZH', 'Bern': 'BE', 'Luzern': 'LU', 'Uri': 'UR', 'Schwyz': 'SZ',
+    'Obwalden': 'OW', 'Nidwalden': 'NW', 'Glarus': 'GL', 'Zug': 'ZG',
+    'Freiburg': 'FR', 'Solothurn': 'SO', 'Basel-Stadt': 'BS',
+    'Basel-Landschaft': 'BL', 'Schaffhausen': 'SH',
+    'Appenzell Ausserrhoden': 'AR', 'Appenzell Innerrhoden': 'AI',
+    'St. Gallen': 'SG', 'Graubünden': 'GR', 'Aargau': 'AG', 'Thurgau': 'TG',
+    'Ticino': 'TI', 'Vaud': 'VD', 'Valais': 'VS', 'Neuchâtel': 'NE',
+    'Genève': 'GE', 'Jura': 'JU',
+    # Französische Varianten
+    'Fribourg': 'FR', 'Soleure': 'SO', 'Bâle-Ville': 'BS', 'Bâle-Campagne': 'BL',
+    'Argovie': 'AG', 'Thurgovie': 'TG', 'Tessin': 'TI', 'Valais / Wallis': 'VS',
+    'Saint-Gall': 'SG', 'Grisons': 'GR', 'Berne': 'BE', 'Lucerne': 'LU',
+    'Genf': 'GE',
+    # Italienische / weitere Schreibweisen
+    'San Gallo': 'SG', 'Grigioni': 'GR', 'Vallese': 'VS', 'Ginevra': 'GE',
+    'Wallis': 'VS', 'Sankt Gallen': 'SG', 'St.Gallen': 'SG',
+}
+
 
 # ═════════════════════════════════════════════════════════════════════════════
 # Hauptfunktion
@@ -129,51 +152,109 @@ def load_kantone(data_dirs, download_url=None, download_target=None,
             print(f'  Ladefehler: {e}')
         return None
 
-    # ── Schritt 4: KAB-Spalte ableiten (3 Strategien) ────────────────────────
+    # ── Schritt 4: KAB-Spalte ableiten — WERTE-basiert (robust gegen Schema-Änderungen)
+    # Spaltenname ist NICHT die Wahrheit (z.B. swissBOUNDARIES3D 2026-01 hat
+    # eine 'icc'-Spalte mit 'CH' = Land-Code, nicht Kantonskürzel). Wir prüfen
+    # daher die WERTE jeder Spalte gegen die drei möglichen Repräsentationen:
+    # (1) Kürzel als String, (2) Nummer 1-26, (3) Kantonsname.
+    import pandas as pd
+
+    # Vorhandene KAB-Spalte zuerst entfernen, falls die Werte fragwürdig sind.
+    # Robust: prüfe sowohl Anzahl valider Kürzel ALS AUCH Eindeutigkeit
+    # (eine Spalte mit allen 'FR' hat 26 valide Kürzel aber nur 1 unique →
+    # ist offensichtlich keine Kantons-ID).
+    if 'KAB' in gdf.columns:
+        pre = gdf['KAB'].astype(str).str.strip().str.upper()
+        n_valid_pre  = pre.isin(KANT_ABK_SET).sum()
+        n_unique_pre = pre[pre.isin(KANT_ABK_SET)].nunique()
+        if n_valid_pre < 20 or n_unique_pre < 20:
+            if verbose:
+                print(f'  Vorhandene KAB-Spalte ist nicht valide '
+                      f'(valid={n_valid_pre}, unique={n_unique_pre}, '
+                      f'Sample: {pre.head(3).tolist()}) — Strategien anwenden')
+            gdf = gdf.drop(columns=['KAB'])
+        else:
+            gdf['KAB'] = pre
+
+    found = False
+
+    # ── Strategie 1: Spalte mit Werten = 2-Buchstaben-Kürzel ─────────────────
+    # Validierung: >=20 valide UND >=20 verschiedene Werte (nicht alle gleich)
     if 'KAB' not in gdf.columns:
-        kab_col = None
-
-        # Strategie 1: Spalten-Name ist icc/kab/abbreviation
         for col in gdf.columns:
-            if col.lower() in ('icc', 'kab', 'abbreviation', 'abb'):
-                kab_col = col
-                break
-
-        # Strategie 2: Spalte enthält Zahlen 1..26 (Kantons-Nummer)
-        if kab_col is None:
-            for col in gdf.columns:
-                if col == 'geometry':
-                    continue
-                try:
-                    import pandas as pd
-                    nums = pd.to_numeric(gdf[col], errors='coerce')
-                    if nums.between(1, 26).sum() >= 20:
-                        gdf['KAB'] = nums.map(KANT_NUM_TO_ABK).fillna('??')
-                        if verbose:
-                            print(f'  KAB via Nummer-Spalte "{col}"')
-                        break
-                except Exception:
-                    continue
-
-        # Strategie 3: Spalte enthält direkt Kürzel (case-insensitive)
-        if 'KAB' not in gdf.columns:
-            for col in gdf.columns:
-                if col == 'geometry':
-                    continue
+            if col == 'geometry':
+                continue
+            try:
                 vals = gdf[col].astype(str).str.strip().str.upper()
-                if vals.isin(KANT_ABK_SET).sum() >= 20:
+                valid_mask = vals.isin(KANT_ABK_SET)
+                n_valid  = valid_mask.sum()
+                n_unique = vals[valid_mask].nunique()
+                if n_valid >= 20 and n_unique >= 20:
                     gdf['KAB'] = vals
                     if verbose:
-                        print(f'  KAB via Kürzel-Spalte "{col}"')
+                        print(f'  KAB via Kürzel-Werte in "{col}" '
+                              f'({n_valid}/{len(gdf)} Treffer, {n_unique} unique)')
+                    found = True
                     break
+            except Exception:
+                continue
 
-        # Nutzung einer spezifizierten Spalte
-        if kab_col and 'KAB' not in gdf.columns:
-            s = gdf[kab_col].astype(str).str.strip()
-            if s.str.isnumeric().all():
-                gdf['KAB'] = s.astype(int).map(KANT_NUM_TO_ABK)
-            else:
-                gdf['KAB'] = s.str.upper().str[:2]
+    # ── Strategie 2: Spalte mit Zahlen 1..26 (Kantons-Nummer) ─────────────────
+    # KRITISCH: erstellung_monat hat auch Werte 1-12 in [1,26] und würde sonst
+    # fälschlich als Kantonsnummer interpretiert. Eindeutigkeit prüfen!
+    # Echte Kantone: 26 verschiedene Nummern. erstellung_monat: max 12.
+    if not found:
+        for col in gdf.columns:
+            if col == 'geometry':
+                continue
+            try:
+                nums = pd.to_numeric(gdf[col], errors='coerce')
+                between = nums.between(1, 26)
+                n_in    = between.sum()
+                n_uniq  = nums[between].nunique()
+                if n_in >= 20 and n_uniq >= 20:
+                    gdf['KAB'] = nums.map(KANT_NUM_TO_ABK).fillna('??')
+                    if verbose:
+                        print(f'  KAB via Kantonsnummer-Werte in "{col}" '
+                              f'({n_in}/{len(gdf)} Treffer, {n_uniq} unique)')
+                    found = True
+                    break
+            except Exception:
+                continue
+
+    # ── Strategie 3: Spalte mit Kantonsnamen (DE/FR/IT) ───────────────────────
+    # Auch hier nunique prüfen — falls eine Spalte versehentlich denselben Namen
+    # häufig wiederholt
+    if not found:
+        for col in gdf.columns:
+            if col == 'geometry':
+                continue
+            try:
+                mapped  = gdf[col].astype(str).str.strip().map(KANT_NAME_TO_ABK)
+                n_map   = mapped.notna().sum()
+                n_uniq  = mapped.dropna().nunique()
+                if n_map >= 20 and n_uniq >= 20:
+                    gdf['KAB'] = mapped.fillna('??')
+                    if verbose:
+                        print(f'  KAB via Kantonsname-Werte in "{col}" '
+                              f'({n_map}/{len(gdf)} Treffer, {n_uniq} unique)')
+                    found = True
+                    break
+            except Exception:
+                continue
+
+    # ── Diagnose bei Misserfolg ───────────────────────────────────────────────
+    if not found:
+        if 'KAB' not in gdf.columns:
+            gdf['KAB'] = '??'
+        if verbose:
+            print(f'⚠️  KAB konnte nicht abgeleitet werden — keine Strategie greift.')
+            print(f'   Verfügbare Spalten + Beispielwerte:')
+            for c in gdf.columns:
+                if c == 'geometry':
+                    continue
+                sample = gdf[c].iloc[0] if len(gdf) else '(leer)'
+                print(f'     {c!r:25s} = {sample!r}')
 
     if verbose:
         n_valid = gdf['KAB'].isin(KANT_ABK_SET).sum() if 'KAB' in gdf.columns else 0
