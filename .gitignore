@@ -1,11 +1,33 @@
-# Build
-.vs/
+# ── Jupyter ───────────────────────────────────────────────────────────────────
 **/.ipynb_checkpoints/
-data/
+*.pyc
+__pycache__/
+
+# ── Daten (gross, nicht ins Repo) ─────────────────────────────────────────────
+**/data/raw/
+**/data/intermediate/
+# data/processed/ → ggf. einkommentieren wenn auch gross
+
+# ── Outputs ───────────────────────────────────────────────────────────────────
+**/output/charts/
+logs/
+
+experimental/output/charts/EXP_kuer_k01d_*.gif
 experimental/output/charts/*frames/
+# ── IDE / OS ──────────────────────────────────────────────────────────────────
+.vs/
+.vscode/
+.DS_Store
+Thumbs.db
+*.tmp
+
+# ── Archiv ────────────────────────────────────────────────────────────────────
+.archive/
+**/.archive/
+*.zip
+
+# Build
+data/
 # Temporäre Dateien
 *.tmp
 *.log
-
-**/.archive/
-*.zip
